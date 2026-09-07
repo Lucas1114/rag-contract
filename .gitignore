@@ -1,0 +1,12 @@
+/CLAUDE.md
+/.handoffs/
+
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+.DS_Store
+.pytest_cache/
+.ruff_cache/
