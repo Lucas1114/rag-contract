@@ -1,0 +1,49 @@
+# Corpus manifest.
+#
+# Six IETF RFCs covering one coherent layer: how a resource is named, how a
+# client talks to it, how responses are cached, how state is carried, and the
+# dominant payload format. Committed verbatim as retrieved from the RFC Editor.
+#
+# sha256 covers the file bytes exactly as committed. These hashes are inputs to
+# the index version: sha256(corpus content + embedding model + chunk params).
+
+retrieved: 2026-09-09
+source: https://www.rfc-editor.org/rfc/
+
+documents:
+  - rfc: 3986
+    title: "Uniform Resource Identifier (URI): Generic Syntax"
+    file: rfc3986.txt
+    url: https://www.rfc-editor.org/rfc/rfc3986.txt
+    bytes: 141811
+    sha256: 3102dae4b68cebe40337730312fcb612297b8928547267e8b3d1ee6002b2d683
+  - rfc: 6265
+    title: "HTTP State Management Mechanism"
+    file: rfc6265.txt
+    url: https://www.rfc-editor.org/rfc/rfc6265.txt
+    bytes: 79724
+    sha256: dc4177094813e85a44a7897b892b76bc09160b3a03aea44f0f511f3a98f91933
+  - rfc: 8259
+    title: "The JavaScript Object Notation (JSON) Data Interchange Format"
+    file: rfc8259.txt
+    url: https://www.rfc-editor.org/rfc/rfc8259.txt
+    bytes: 28360
+    sha256: 61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7
+  - rfc: 9110
+    title: "HTTP Semantics"
+    file: rfc9110.txt
+    url: https://www.rfc-editor.org/rfc/rfc9110.txt
+    bytes: 502941
+    sha256: 21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a
+  - rfc: 9111
+    title: "HTTP Caching"
+    file: rfc9111.txt
+    url: https://www.rfc-editor.org/rfc/rfc9111.txt
+    bytes: 84477
+    sha256: aeb52adb3279d5f23dae34f68af11bd5cef0a0aff7ffcd014c9ca93c5302cf3e
+  - rfc: 9112
+    title: "HTTP/1.1"
+    file: rfc9112.txt
+    url: https://www.rfc-editor.org/rfc/rfc9112.txt
+    bytes: 109913
+    sha256: e4f426bac6206b67fdf9e0da826154f70588db2133a0a86b15cde4ff725d8937

@@ -1,0 +1,224 @@
+# The question set. This file defines what "correct" means for the whole
+# project: retrieval quality is measured against these annotations, and the
+# CI gate compares its recall to eval/thresholds.yaml.
+#
+# Passage ids are RFC *section* ids ("rfc9110#9.2.1"), never chunk ids. A
+# section parser tags every chunk with the section it came from, and a question
+# counts as a hit at k when any chunk in the top k carries an expected section.
+# Annotations therefore survive any change to chunk size or overlap.
+#
+# Fields:
+#   id          stable identifier; never reused or renumbered
+#   question    the question as asked
+#   answerable  true  -> `expected` must be retrieved
+#               false -> the service must refuse
+#   expected    list of section ids (answerable questions only)
+#   note        the fact that answers it, for a reviewer checking by hand
+#
+# Refusal questions additionally carry:
+#   absent      why the corpus does not answer it
+#   nearest     sections retrieval is expected to surface anyway; metadata
+#               only, not scored
+#
+# Two deliberate omissions, both to be filled in once the harness has produced
+# a real score distribution:
+#   - `expected` is a list but currently always holds one section. Multi-passage
+#     questions (comparisons such as safe-vs-idempotent) need a `match: all`
+#     mode in the scorer; the list shape is here so adding them later needs no
+#     migration.
+#   - Refusal questions assert only that the service refuses, not which of the
+#     three failure states it enters. Those state boundaries are set by a
+#     similarity threshold that has not been measured yet; annotating them now
+#     would guarantee re-annotation later.
+
+questions:
+
+  # --- RFC 3986: URI generic syntax ---
+
+  - id: q01
+    question: "Which characters make up the unreserved set in a URI?"
+    answerable: true
+    expected: ["rfc3986#2.3"]
+    note: "ALPHA, DIGIT, and the four marks - . _ ~"
+
+  - id: q02
+    question: "How is a percent-encoded octet written in a URI?"
+    answerable: true
+    expected: ["rfc3986#2.1"]
+    note: "A percent sign followed by two hexadecimal digits."
+
+  - id: q03
+    question: "What does a URI fragment identifier identify?"
+    answerable: true
+    expected: ["rfc3986#3.5"]
+    note: "A secondary resource, interpreted relative to the primary resource and its media type."
+
+  # --- RFC 9110: HTTP semantics ---
+
+  - id: q04
+    question: "Which HTTP request methods are defined as safe?"
+    answerable: true
+    expected: ["rfc9110#9.2.1"]
+    note: "GET, HEAD, OPTIONS, and TRACE."
+
+  - id: q05
+    question: "Which status code means the server knows the request method but the target resource does not support it, and what must that response include?"
+    answerable: true
+    expected: ["rfc9110#15.5.6"]
+    note: "405 Method Not Allowed; the origin server must generate an Allow header field."
+
+  - id: q06
+    question: "What distinguishes a strong validator from a weak validator?"
+    answerable: true
+    expected: ["rfc9110#8.8.1"]
+    note: "A strong validator changes whenever the representation data changes; a weak one may stay the same across semantically equivalent changes."
+
+  - id: q07
+    question: "What does a Vary header field on a response tell a cache?"
+    answerable: true
+    expected: ["rfc9110#12.5.5"]
+    note: "Which request fields the selection of this representation depended on, so the cache can key on them."
+
+  - id: q08
+    question: "How is a quality value in a content negotiation header field interpreted?"
+    answerable: true
+    expected: ["rfc9110#12.4.2"]
+    note: "A weight from 0 to 1 with up to three decimal places; 0 means not acceptable."
+
+  - id: q09
+    question: "How does a server indicate that it supports range requests for a resource?"
+    answerable: true
+    expected: ["rfc9110#14.3"]
+    note: "By sending an Accept-Ranges header field naming the range units it supports."
+
+  # --- RFC 9111: HTTP caching ---
+
+  - id: q10
+    question: "How does a cache calculate the freshness lifetime of a stored response?"
+    answerable: true
+    expected: ["rfc9111#4.2.1"]
+    note: "First s-maxage (shared caches), then max-age, then Expires minus Date, otherwise heuristic."
+
+  - id: q11
+    question: "When may a cache use heuristic freshness?"
+    answerable: true
+    expected: ["rfc9111#4.2.2"]
+    note: "Only when no explicit expiration time is present in the stored response."
+
+  - id: q12
+    question: "What does the s-maxage response directive do, and which caches does it apply to?"
+    answerable: true
+    expected: ["rfc9111#5.2.2.10"]
+    note: "Overrides max-age and Expires, for shared caches only."
+
+  - id: q13
+    question: "When may a shared cache store a response to a request that carried an Authorization header field?"
+    answerable: true
+    expected: ["rfc9111#3.5"]
+    note: "Only when the response explicitly permits it, via must-revalidate, public, or s-maxage."
+
+  # --- RFC 9112: HTTP/1.1 ---
+
+  - id: q14
+    question: "How does a recipient determine the length of a message body in an HTTP/1.1 message?"
+    answerable: true
+    expected: ["rfc9112#6.3"]
+    note: "An ordered list of rules; Transfer-Encoding takes precedence over Content-Length."
+
+  - id: q15
+    question: "How is the end of a chunked message body signalled?"
+    answerable: true
+    expected: ["rfc9112#7.1"]
+    note: "By a chunk with a size of zero, followed by the trailer section and an empty line."
+
+  - id: q16
+    question: "Which request-target form is used for a CONNECT request?"
+    answerable: true
+    expected: ["rfc9112#3.2.3"]
+    note: "authority-form: host and port only, no scheme or path."
+
+  # --- RFC 6265: cookies ---
+
+  - id: q17
+    question: "What effect does the HttpOnly attribute have on a cookie?"
+    answerable: true
+    expected: ["rfc6265#5.2.6"]
+    note: "Restricts the cookie to HTTP requests, keeping it out of non-HTTP APIs such as scripts."
+
+  - id: q18
+    question: "How is domain matching defined for cookies?"
+    answerable: true
+    expected: ["rfc6265#5.1.3"]
+    note: "Identical strings, or the domain is a suffix of the host at a dot boundary and the host is not an IP address."
+
+  - id: q19
+    question: "What minimum size per cookie should a user agent support?"
+    answerable: true
+    expected: ["rfc6265#6.1"]
+    note: "At least 4096 bytes for name, value and attributes combined."
+
+  # --- RFC 8259: JSON ---
+
+  - id: q20
+    question: "What are the six structural characters in JSON?"
+    answerable: true
+    expected: ["rfc8259#2"]
+    note: "Left and right square bracket, left and right curly bracket, colon, comma."
+
+  # --- Refusal path: no answer in this corpus ---
+
+  - id: u01
+    question: "How does HTTP/2 multiplex multiple requests over a single TCP connection?"
+    answerable: false
+    absent: >-
+      HTTP/2 is RFC 9113, not in the corpus. RFC 9110 Section 1.2 notes in
+      passing that HTTP/2 introduced a multiplexed session layer, but describes
+      no streams, frames or flow control: it states the fact without answering
+      how. Retrieval is expected to rank that passage highly regardless, which
+      makes this a test of grounding rather than of similarity.
+    nearest: ["rfc9110#1.2", "rfc9112#9.3", "rfc9112#9.4"]
+
+  - id: u02
+    question: "What fields does an HTTP/2 HEADERS frame contain?"
+    answerable: false
+    absent: "HTTP/2 frame layout is RFC 9113, which is not in the corpus."
+    nearest: []
+
+  - id: u03
+    question: "How does the SameSite cookie attribute restrict cross-site requests?"
+    answerable: false
+    absent: "SameSite was introduced after RFC 6265; the corpus has the original six attributes only."
+    nearest: ["rfc6265#5.2.5", "rfc6265#5.4"]
+
+  - id: u04
+    question: "What grant types does OAuth 2.0 define?"
+    answerable: false
+    absent: "OAuth 2.0 is RFC 6749; the corpus carries only the generic HTTP authentication framework."
+    nearest: ["rfc9110#11.1", "rfc9110#11.3"]
+
+  - id: u05
+    question: "How is the signature of a JSON Web Token computed?"
+    answerable: false
+    absent: "JWT and JWS are RFCs 7519 and 7515; the corpus has the JSON grammar but no token format."
+    nearest: ["rfc8259#7", "rfc9110#11.4"]
+
+  - id: u06
+    question: "What resource records does a DNS server return for an A-record query?"
+    answerable: false
+    absent: "DNS is RFC 1035, a different layer entirely."
+    nearest: []
+
+  - id: u07
+    question: "What is the message sequence of the TLS 1.3 handshake?"
+    answerable: false
+    absent: >-
+      TLS 1.3 is RFC 8446, not in the corpus. RFC 9112 Section 9.7 mentions
+      sending a ClientHello to begin the handshake, but gives no message
+      sequence.
+    nearest: ["rfc9112#9.7", "rfc9110#4.3.4"]
+
+  - id: u08
+    question: "How does a browser decide whether to send a CORS preflight request?"
+    answerable: false
+    absent: "CORS is the WHATWG Fetch standard, not an RFC, and is not in the corpus."
+    nearest: ["rfc9110#9.3.7", "rfc9110#7.8"]
