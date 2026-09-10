@@ -3,6 +3,12 @@
 Embeddings are computed once, by `build-index`, and the vectors are committed.
 Nothing else — not the eval, not CI — calls this. Keeping the dependency in one
 module makes that claim checkable by import graph rather than asserted in prose.
+
+The build has to survive whatever rate limit the account it runs under happens
+to have, because the point of committing vectors is that anyone can rebuild
+them. Rather than hard-coding one tier's allowances, the client schedules
+against generous defaults and treats a 429 as authoritative, honouring the
+Retry-After the server sends back.
 """
 
 from __future__ import annotations
@@ -16,28 +22,29 @@ from pathlib import Path
 import httpx
 import numpy as np
 
-MODEL = "voyage-4-lite"
-DIMENSIONS = 1024
-ENDPOINT = "https://api.voyageai.com/v1/embeddings"
+MODEL = "text-embedding-3-small"
+DIMENSIONS = 1536
+ENDPOINT = "https://api.openai.com/v1/embeddings"
 
-# Voyage accepts up to 1000 inputs and 1M tokens per request, so request size is
-# never the binding constraint. The account rate limit is: with no payment
-# method on file, 3 requests and 10k tokens per minute. The corpus is around
-# 170k tokens, so a build from a fresh account takes roughly twenty minutes.
-#
-# That is acceptable for something run once whose output is committed, and
-# encoding the free-tier limits here keeps the build reproducible on any
-# account. An account with billing enabled can raise both numbers.
-REQUESTS_PER_MINUTE = 3
-TOKENS_PER_MINUTE = 10_000
-BATCH_SIZE = 64
-TIMEOUT_SECONDS = 120
+# Hard per-request limits: the API accepts at most 2048 inputs, and batches are
+# kept well under that so a failed request is cheap to retry.
+MAX_INPUTS_PER_REQUEST = 256
+MAX_TOKENS_PER_REQUEST = 100_000
 
-# Retry budget for a 429 the client-side limiter did not prevent.
-MAX_ATTEMPTS = 6
-BACKOFF_SECONDS = 20
+# Per-minute allowances the client schedules against. Deliberately generous:
+# the corpus is around 170k tokens, so a build takes a couple of minutes on any
+# account that is not throttled, and a throttled one falls back on the 429 path
+# below rather than on a number guessed here.
+REQUESTS_PER_MINUTE = 60
+TOKENS_PER_MINUTE = 150_000
+
+# Retry budget for a 429. The server's Retry-After wins when it sends one.
+MAX_ATTEMPTS = 8
+BACKOFF_SECONDS = 15
+MAX_BACKOFF_SECONDS = 120
 
 _ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+_KEY_NAME = "OPENAI_API_KEY"
 
 
 class EmbeddingError(RuntimeError):
@@ -45,16 +52,16 @@ class EmbeddingError(RuntimeError):
 
 
 def _api_key() -> str:
-    key = os.environ.get("VOYAGE_API_KEY", "").strip()
+    key = os.environ.get(_KEY_NAME, "").strip()
     if not key and _ENV_PATH.is_file():
         for line in _ENV_PATH.read_text().splitlines():
             name, _, value = line.partition("=")
-            if name.strip() == "VOYAGE_API_KEY":
+            if name.strip() == _KEY_NAME:
                 key = value.strip()
                 break
     if not key:
         raise EmbeddingError(
-            "VOYAGE_API_KEY is not set. Embeddings are built once and committed; "
+            f"{_KEY_NAME} is not set. Embeddings are built once and committed; "
             "the eval runs off those committed vectors and needs no key."
         )
     return key
@@ -63,8 +70,8 @@ def _api_key() -> str:
 def estimate_tokens(text: str) -> int:
     """A deliberate over-estimate of a text's token count.
 
-    Used only to stay inside the per-minute token allowance. Over-estimating
-    costs a little wall clock on a one-time build; under-estimating costs a 429.
+    Used only for scheduling. Over-estimating costs a little wall clock on a
+    build that runs once; under-estimating costs a 429 partway through.
     """
     return max(1, len(text) // 3)
 
@@ -95,13 +102,13 @@ class _RateLimiter:
 
 
 def _batch(texts: list[str], token_budget: int) -> list[tuple[int, list[str]]]:
-    """Group texts into requests that fit the per-minute token allowance."""
+    """Group texts into requests that fit the per-request limits."""
     batches: list[tuple[int, list[str]]] = []
     current: list[str] = []
     current_tokens = 0
     for text in texts:
         tokens = estimate_tokens(text)
-        full = len(current) >= BATCH_SIZE
+        full = len(current) >= MAX_INPUTS_PER_REQUEST
         over_budget = current and current_tokens + tokens > token_budget
         if full or over_budget:
             batches.append((current_tokens, current))
@@ -122,16 +129,27 @@ def normalise(vectors: np.ndarray) -> np.ndarray:
     return (vectors / norms).astype(np.float32)
 
 
+def _retry_delay(response: httpx.Response, attempt: int) -> float:
+    """How long to wait after a 429: the server's answer, or a backoff."""
+    header = response.headers.get("retry-after")
+    if header:
+        try:
+            return min(max(float(header), 1.0), MAX_BACKOFF_SECONDS)
+        except ValueError:
+            pass  # Retry-After may be an HTTP date; fall back on backoff.
+    return min(BACKOFF_SECONDS * attempt, MAX_BACKOFF_SECONDS)
+
+
 def _post_with_retry(client: httpx.Client, headers: dict, body: dict) -> dict:
-    """POST one batch, retrying a 429 the client-side limiter did not prevent."""
+    """POST one batch, retrying while the account's real rate limit allows."""
     for attempt in range(1, MAX_ATTEMPTS + 1):
         response = client.post(ENDPOINT, headers=headers, json=body)
         if response.status_code == 200:
             return response.json()
         if response.status_code == 429 and attempt < MAX_ATTEMPTS:
-            delay = BACKOFF_SECONDS * attempt
+            delay = _retry_delay(response, attempt)
             print(
-                f"    rate limited, retrying in {delay}s "
+                f"    rate limited, retrying in {delay:.0f}s "
                 f"(attempt {attempt}/{MAX_ATTEMPTS})",
                 file=sys.stderr,
                 flush=True,
@@ -147,18 +165,15 @@ def _post_with_retry(client: httpx.Client, headers: dict, body: dict) -> dict:
 
 def embed_texts(
     texts: list[str],
-    input_type: str,
     *,
     model: str = MODEL,
     dimensions: int = DIMENSIONS,
 ) -> np.ndarray:
     """Embed texts in order, returning an L2-normalised (n, dimensions) array.
 
-    `input_type` is "document" for corpus chunks and "query" for questions;
-    Voyage embeds the two asymmetrically, and mixing them costs recall.
+    This model embeds queries and documents into one space, so questions and
+    chunks go through the same call with no asymmetric hint.
     """
-    if input_type not in {"document", "query"}:
-        raise ValueError(f"input_type must be document or query, not {input_type!r}")
     if not texts:
         return np.zeros((0, dimensions), dtype=np.float32)
 
@@ -166,11 +181,11 @@ def embed_texts(
         "Authorization": f"Bearer {_api_key()}",
         "Content-Type": "application/json",
     }
-    batches = _batch(texts, TOKENS_PER_MINUTE)
+    batches = _batch(texts, MAX_TOKENS_PER_REQUEST)
     limiter = _RateLimiter(REQUESTS_PER_MINUTE, TOKENS_PER_MINUTE)
     embedded = []
 
-    with httpx.Client(timeout=TIMEOUT_SECONDS) as client:
+    with httpx.Client(timeout=120) as client:
         for number, (tokens, batch) in enumerate(batches, start=1):
             limiter.acquire(tokens)
             print(
@@ -185,8 +200,8 @@ def embed_texts(
                 {
                     "input": batch,
                     "model": model,
-                    "input_type": input_type,
-                    "output_dimension": dimensions,
+                    "dimensions": dimensions,
+                    "encoding_format": "float",
                 },
             )
             data = sorted(payload["data"], key=lambda item: item["index"])

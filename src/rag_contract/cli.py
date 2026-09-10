@@ -76,8 +76,8 @@ def cmd_build_index(args: argparse.Namespace) -> int:
         f"with {MODEL} at {DIMENSIONS} dimensions",
         file=sys.stderr,
     )
-    chunk_vectors = embed_texts([c.embedding_text for c in chunks], "document")
-    question_vectors = embed_texts([q.question for q in questions], "query")
+    chunk_vectors = embed_texts([c.embedding_text for c in chunks])
+    question_vectors = embed_texts([q.question for q in questions])
 
     meta = write_index(
         documents=documents,
