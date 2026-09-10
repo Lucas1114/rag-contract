@@ -1,0 +1,2344 @@
+{
+  "index_version": "0fc1763d6701",
+  "embedding_model": "text-embedding-3-small",
+  "chunk_words": 220,
+  "overlap_words": 40,
+  "questions_fingerprint": "96281a887ac6dfbe63c8421accf48334956ef82651fceea3c695b80a3d06be83",
+  "top_k": 10,
+  "metrics": {
+    "answerable_questions": 20,
+    "unanswerable_questions": 8,
+    "recall_at_1": 0.7,
+    "recall_at_3": 0.95,
+    "recall_at_5": 1.0,
+    "recall_at_10": 1.0,
+    "mrr": 0.8292,
+    "misses": []
+  },
+  "score_distribution": {
+    "answerable": {
+      "count": 20,
+      "min": 0.592,
+      "median": 0.7286,
+      "max": 0.8047,
+      "mean": 0.7126
+    },
+    "unanswerable": {
+      "count": 8,
+      "min": 0.3751,
+      "median": 0.5037,
+      "max": 0.6044,
+      "mean": 0.4809
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "question": "Which characters make up the unreserved set in a URI?",
+      "answerable": true,
+      "expected": [
+        "rfc3986#2.3"
+      ],
+      "rank": 1,
+      "top_score": 0.684,
+      "top_section": "rfc3986#2.3",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.684,
+          "chunk_id": "rfc3986#2.3/0",
+          "section_id": "rfc3986#2.3",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.6824,
+          "chunk_id": "rfc3986#2.2/0",
+          "section_id": "rfc3986#2.2",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.6664,
+          "chunk_id": "rfc3986#2/0",
+          "section_id": "rfc3986#2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6645,
+          "chunk_id": "rfc3986#2.2/1",
+          "section_id": "rfc3986#2.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6195,
+          "chunk_id": "rfc3986#2.5/0",
+          "section_id": "rfc3986#2.5",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5968,
+          "chunk_id": "rfc3986#A/0",
+          "section_id": "rfc3986#A",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5936,
+          "chunk_id": "rfc3986#1/0",
+          "section_id": "rfc3986#1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5897,
+          "chunk_id": "rfc3986#A/2",
+          "section_id": "rfc3986#A",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5797,
+          "chunk_id": "rfc3986#A/1",
+          "section_id": "rfc3986#A",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5755,
+          "chunk_id": "rfc3986#1.1/0",
+          "section_id": "rfc3986#1.1",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q02",
+      "question": "How is a percent-encoded octet written in a URI?",
+      "answerable": true,
+      "expected": [
+        "rfc3986#2.1"
+      ],
+      "rank": 1,
+      "top_score": 0.7876,
+      "top_section": "rfc3986#2.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7876,
+          "chunk_id": "rfc3986#2.1/0",
+          "section_id": "rfc3986#2.1",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.7134,
+          "chunk_id": "rfc3986#2.4/0",
+          "section_id": "rfc3986#2.4",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.7012,
+          "chunk_id": "rfc3986#6.2.2.2/0",
+          "section_id": "rfc3986#6.2.2.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6651,
+          "chunk_id": "rfc3986#1.2.1/1",
+          "section_id": "rfc3986#1.2.1",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6322,
+          "chunk_id": "rfc3986#2.5/1",
+          "section_id": "rfc3986#2.5",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.6219,
+          "chunk_id": "rfc3986#2.5/2",
+          "section_id": "rfc3986#2.5",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.6203,
+          "chunk_id": "rfc3986#1.2.1/2",
+          "section_id": "rfc3986#1.2.1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.6189,
+          "chunk_id": "rfc3986#7.3/0",
+          "section_id": "rfc3986#7.3",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.6159,
+          "chunk_id": "rfc3986#2.4/1",
+          "section_id": "rfc3986#2.4",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5987,
+          "chunk_id": "rfc3986#2/0",
+          "section_id": "rfc3986#2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q03",
+      "question": "What does a URI fragment identifier identify?",
+      "answerable": true,
+      "expected": [
+        "rfc3986#3.5"
+      ],
+      "rank": 1,
+      "top_score": 0.7555,
+      "top_section": "rfc3986#3.5",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7555,
+          "chunk_id": "rfc3986#3.5/0",
+          "section_id": "rfc3986#3.5",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.7227,
+          "chunk_id": "rfc3986#3.5/2",
+          "section_id": "rfc3986#3.5",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.6997,
+          "chunk_id": "rfc9110#4.2.5/0",
+          "section_id": "rfc9110#4.2.5",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6852,
+          "chunk_id": "rfc3986#3.5/1",
+          "section_id": "rfc3986#3.5",
+          "expected": true
+        },
+        {
+          "rank": 5,
+          "score": 0.5991,
+          "chunk_id": "rfc3986#4.3/0",
+          "section_id": "rfc3986#4.3",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5933,
+          "chunk_id": "rfc9110#17.11/0",
+          "section_id": "rfc9110#17.11",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5815,
+          "chunk_id": "rfc9110#4/0",
+          "section_id": "rfc9110#4",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5717,
+          "chunk_id": "rfc3986#1.2.2/1",
+          "section_id": "rfc3986#1.2.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.551,
+          "chunk_id": "rfc3986#1.1.3/0",
+          "section_id": "rfc3986#1.1.3",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5509,
+          "chunk_id": "rfc3986#1.2.2/0",
+          "section_id": "rfc3986#1.2.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q04",
+      "question": "Which HTTP request methods are defined as safe?",
+      "answerable": true,
+      "expected": [
+        "rfc9110#9.2.1"
+      ],
+      "rank": 1,
+      "top_score": 0.7779,
+      "top_section": "rfc9110#9.2.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7779,
+          "chunk_id": "rfc9110#9.2.1/0",
+          "section_id": "rfc9110#9.2.1",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.7017,
+          "chunk_id": "rfc9110#9.2.1/1",
+          "section_id": "rfc9110#9.2.1",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.6249,
+          "chunk_id": "rfc9110#9.2.1/2",
+          "section_id": "rfc9110#9.2.1",
+          "expected": true
+        },
+        {
+          "rank": 4,
+          "score": 0.5593,
+          "chunk_id": "rfc9110#9.2.2/0",
+          "section_id": "rfc9110#9.2.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5515,
+          "chunk_id": "rfc9110#18.2/0",
+          "section_id": "rfc9110#18.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5494,
+          "chunk_id": "rfc9110#16.1.1/0",
+          "section_id": "rfc9110#16.1.1",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.527,
+          "chunk_id": "rfc9110#9.1/1",
+          "section_id": "rfc9110#9.1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5265,
+          "chunk_id": "rfc9110#16.1.2/0",
+          "section_id": "rfc9110#16.1.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5154,
+          "chunk_id": "rfc9110#4.2/0",
+          "section_id": "rfc9110#4.2",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5086,
+          "chunk_id": "rfc9110#16.1.2/1",
+          "section_id": "rfc9110#16.1.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q05",
+      "question": "Which status code means the server knows the request method but the target resource does not support it, and what must that response include?",
+      "answerable": true,
+      "expected": [
+        "rfc9110#15.5.6"
+      ],
+      "rank": 2,
+      "top_score": 0.6172,
+      "top_section": "rfc9110#15.6.2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6172,
+          "chunk_id": "rfc9110#15.6.2/0",
+          "section_id": "rfc9110#15.6.2",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.6044,
+          "chunk_id": "rfc9110#15.5.6/0",
+          "section_id": "rfc9110#15.5.6",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.575,
+          "chunk_id": "rfc9110#15.5.16/0",
+          "section_id": "rfc9110#15.5.16",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5573,
+          "chunk_id": "rfc9110#15.5.7/0",
+          "section_id": "rfc9110#15.5.7",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5509,
+          "chunk_id": "rfc9110#15.6.6/0",
+          "section_id": "rfc9110#15.6.6",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5492,
+          "chunk_id": "rfc9110#9.1/2",
+          "section_id": "rfc9110#9.1",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5329,
+          "chunk_id": "rfc9110#15.6/0",
+          "section_id": "rfc9110#15.6",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5264,
+          "chunk_id": "rfc9110#18.3/2",
+          "section_id": "rfc9110#18.3",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5197,
+          "chunk_id": "rfc9110#15/0",
+          "section_id": "rfc9110#15",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5178,
+          "chunk_id": "rfc9110#15.5.4/0",
+          "section_id": "rfc9110#15.5.4",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q06",
+      "question": "What distinguishes a strong validator from a weak validator?",
+      "answerable": true,
+      "expected": [
+        "rfc9110#8.8.1"
+      ],
+      "rank": 1,
+      "top_score": 0.7414,
+      "top_section": "rfc9110#8.8.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7414,
+          "chunk_id": "rfc9110#8.8.1/0",
+          "section_id": "rfc9110#8.8.1",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.6978,
+          "chunk_id": "rfc9110#8.8.1/1",
+          "section_id": "rfc9110#8.8.1",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.6393,
+          "chunk_id": "rfc9110#8.8.1/3",
+          "section_id": "rfc9110#8.8.1",
+          "expected": true
+        },
+        {
+          "rank": 4,
+          "score": 0.6015,
+          "chunk_id": "rfc9110#8.8.1/2",
+          "section_id": "rfc9110#8.8.1",
+          "expected": true
+        },
+        {
+          "rank": 5,
+          "score": 0.5362,
+          "chunk_id": "rfc9110#8.8.2.2/0",
+          "section_id": "rfc9110#8.8.2.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.4961,
+          "chunk_id": "rfc9110#17.14/0",
+          "section_id": "rfc9110#17.14",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.4484,
+          "chunk_id": "rfc9110#8.8.3.2/0",
+          "section_id": "rfc9110#8.8.3.2",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.4438,
+          "chunk_id": "rfc9111#4.3.4/0",
+          "section_id": "rfc9111#4.3.4",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.4198,
+          "chunk_id": "rfc9111#4.3.1/0",
+          "section_id": "rfc9111#4.3.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.413,
+          "chunk_id": "rfc9110#8.8/0",
+          "section_id": "rfc9110#8.8",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q07",
+      "question": "What does a Vary header field on a response tell a cache?",
+      "answerable": true,
+      "expected": [
+        "rfc9110#12.5.5"
+      ],
+      "rank": 3,
+      "top_score": 0.7774,
+      "top_section": "rfc9111#4.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7774,
+          "chunk_id": "rfc9111#4.1/2",
+          "section_id": "rfc9111#4.1",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.731,
+          "chunk_id": "rfc9111#4.1/1",
+          "section_id": "rfc9111#4.1",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.7302,
+          "chunk_id": "rfc9110#12.5.5/1",
+          "section_id": "rfc9110#12.5.5",
+          "expected": true
+        },
+        {
+          "rank": 4,
+          "score": 0.7162,
+          "chunk_id": "rfc9111#4.1/0",
+          "section_id": "rfc9111#4.1",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6976,
+          "chunk_id": "rfc9110#12.5.5/0",
+          "section_id": "rfc9110#12.5.5",
+          "expected": true
+        },
+        {
+          "rank": 6,
+          "score": 0.681,
+          "chunk_id": "rfc9110#12.5.5/2",
+          "section_id": "rfc9110#12.5.5",
+          "expected": true
+        },
+        {
+          "rank": 7,
+          "score": 0.6116,
+          "chunk_id": "rfc9111#3.2/0",
+          "section_id": "rfc9111#3.2",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5908,
+          "chunk_id": "rfc9111#2/1",
+          "section_id": "rfc9111#2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5858,
+          "chunk_id": "rfc9111#2/0",
+          "section_id": "rfc9111#2",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.569,
+          "chunk_id": "rfc9111#4/0",
+          "section_id": "rfc9111#4",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q08",
+      "question": "How is a quality value in a content negotiation header field interpreted?",
+      "answerable": true,
+      "expected": [
+        "rfc9110#12.4.2"
+      ],
+      "rank": 1,
+      "top_score": 0.6437,
+      "top_section": "rfc9110#12.4.2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6437,
+          "chunk_id": "rfc9110#12.4.2/0",
+          "section_id": "rfc9110#12.4.2",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.567,
+          "chunk_id": "rfc9110#12.3/0",
+          "section_id": "rfc9110#12.3",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.5514,
+          "chunk_id": "rfc9110#12/1",
+          "section_id": "rfc9110#12",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5493,
+          "chunk_id": "rfc9110#12/0",
+          "section_id": "rfc9110#12",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.529,
+          "chunk_id": "rfc9110#8.8.3.3/0",
+          "section_id": "rfc9110#8.8.3.3",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5192,
+          "chunk_id": "rfc9110#12.5.5/1",
+          "section_id": "rfc9110#12.5.5",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5185,
+          "chunk_id": "rfc9110#12.4.1/0",
+          "section_id": "rfc9110#12.4.1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.517,
+          "chunk_id": "rfc9110#12.4.3/0",
+          "section_id": "rfc9110#12.4.3",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5159,
+          "chunk_id": "rfc9110#12.1/2",
+          "section_id": "rfc9110#12.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5112,
+          "chunk_id": "rfc9110#12.1/0",
+          "section_id": "rfc9110#12.1",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q09",
+      "question": "How does a server indicate that it supports range requests for a resource?",
+      "answerable": true,
+      "expected": [
+        "rfc9110#14.3"
+      ],
+      "rank": 2,
+      "top_score": 0.6881,
+      "top_section": "rfc9110#14.2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6881,
+          "chunk_id": "rfc9110#14.2/3",
+          "section_id": "rfc9110#14.2",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.6794,
+          "chunk_id": "rfc9110#14.3/0",
+          "section_id": "rfc9110#14.3",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.6655,
+          "chunk_id": "rfc9110#14/0",
+          "section_id": "rfc9110#14",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6631,
+          "chunk_id": "rfc9110#14.2/1",
+          "section_id": "rfc9110#14.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6605,
+          "chunk_id": "rfc9110#14.2/2",
+          "section_id": "rfc9110#14.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.6545,
+          "chunk_id": "rfc9110#14.2/0",
+          "section_id": "rfc9110#14.2",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.6355,
+          "chunk_id": "rfc9110#17.15/0",
+          "section_id": "rfc9110#17.15",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5982,
+          "chunk_id": "rfc9110#13.1.5/0",
+          "section_id": "rfc9110#13.1.5",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5909,
+          "chunk_id": "rfc9110#14.4/0",
+          "section_id": "rfc9110#14.4",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5732,
+          "chunk_id": "rfc9110#15.3.7/0",
+          "section_id": "rfc9110#15.3.7",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q10",
+      "question": "How does a cache calculate the freshness lifetime of a stored response?",
+      "answerable": true,
+      "expected": [
+        "rfc9111#4.2.1"
+      ],
+      "rank": 1,
+      "top_score": 0.7818,
+      "top_section": "rfc9111#4.2.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7818,
+          "chunk_id": "rfc9111#4.2.1/0",
+          "section_id": "rfc9111#4.2.1",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.7114,
+          "chunk_id": "rfc9111#4.2/1",
+          "section_id": "rfc9111#4.2",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.6888,
+          "chunk_id": "rfc9111#4.2/0",
+          "section_id": "rfc9111#4.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6621,
+          "chunk_id": "rfc9111#4.2.2/0",
+          "section_id": "rfc9111#4.2.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6486,
+          "chunk_id": "rfc9111#1/1",
+          "section_id": "rfc9111#1",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.6327,
+          "chunk_id": "rfc9111#4/0",
+          "section_id": "rfc9111#4",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.6213,
+          "chunk_id": "rfc9111#3/1",
+          "section_id": "rfc9111#3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.6176,
+          "chunk_id": "rfc9111#4.2/2",
+          "section_id": "rfc9111#4.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.6069,
+          "chunk_id": "rfc9111#4.3.4/0",
+          "section_id": "rfc9111#4.3.4",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.6049,
+          "chunk_id": "rfc9111#4.3.5/1",
+          "section_id": "rfc9111#4.3.5",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q11",
+      "question": "When may a cache use heuristic freshness?",
+      "answerable": true,
+      "expected": [
+        "rfc9111#4.2.2"
+      ],
+      "rank": 1,
+      "top_score": 0.7272,
+      "top_section": "rfc9111#4.2.2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7272,
+          "chunk_id": "rfc9111#4.2.2/0",
+          "section_id": "rfc9111#4.2.2",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.6891,
+          "chunk_id": "rfc9111#4.2.2/1",
+          "section_id": "rfc9111#4.2.2",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.656,
+          "chunk_id": "rfc9111#4.2/1",
+          "section_id": "rfc9111#4.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6309,
+          "chunk_id": "rfc9111#4.2/2",
+          "section_id": "rfc9111#4.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6157,
+          "chunk_id": "rfc9111#4.2.1/0",
+          "section_id": "rfc9111#4.2.1",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5906,
+          "chunk_id": "rfc9111#4.2/0",
+          "section_id": "rfc9111#4.2",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5669,
+          "chunk_id": "rfc9111#1/1",
+          "section_id": "rfc9111#1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5655,
+          "chunk_id": "rfc9111#4.3.5/1",
+          "section_id": "rfc9111#4.3.5",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5567,
+          "chunk_id": "rfc9111#6/0",
+          "section_id": "rfc9111#6",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.544,
+          "chunk_id": "rfc9111#4.3.5/0",
+          "section_id": "rfc9111#4.3.5",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q12",
+      "question": "What does the s-maxage response directive do, and which caches does it apply to?",
+      "answerable": true,
+      "expected": [
+        "rfc9111#5.2.2.10"
+      ],
+      "rank": 1,
+      "top_score": 0.6373,
+      "top_section": "rfc9111#5.2.2.10",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6373,
+          "chunk_id": "rfc9111#5.2.2.10/0",
+          "section_id": "rfc9111#5.2.2.10",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.6315,
+          "chunk_id": "rfc9111#3/1",
+          "section_id": "rfc9111#3",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.6048,
+          "chunk_id": "rfc9111#5.2.2/0",
+          "section_id": "rfc9111#5.2.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5938,
+          "chunk_id": "rfc9111#5.2.1/0",
+          "section_id": "rfc9111#5.2.1",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5681,
+          "chunk_id": "rfc9111#3.5/0",
+          "section_id": "rfc9111#3.5",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5627,
+          "chunk_id": "rfc9111#3/0",
+          "section_id": "rfc9111#3",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5473,
+          "chunk_id": "rfc9111#5.2.2.3/0",
+          "section_id": "rfc9111#5.2.2.3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5437,
+          "chunk_id": "rfc9111#8.2/0",
+          "section_id": "rfc9111#8.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5305,
+          "chunk_id": "rfc9111#5.2.3/0",
+          "section_id": "rfc9111#5.2.3",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5248,
+          "chunk_id": "rfc9111#5.2.3/1",
+          "section_id": "rfc9111#5.2.3",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q13",
+      "question": "When may a shared cache store a response to a request that carried an Authorization header field?",
+      "answerable": true,
+      "expected": [
+        "rfc9111#3.5"
+      ],
+      "rank": 1,
+      "top_score": 0.7847,
+      "top_section": "rfc9111#3.5",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7847,
+          "chunk_id": "rfc9111#3.5/0",
+          "section_id": "rfc9111#3.5",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.6713,
+          "chunk_id": "rfc9111#3/0",
+          "section_id": "rfc9111#3",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.636,
+          "chunk_id": "rfc9111#4/0",
+          "section_id": "rfc9111#4",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6259,
+          "chunk_id": "rfc9111#3/1",
+          "section_id": "rfc9111#3",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6116,
+          "chunk_id": "rfc9111#5.2.2.9/0",
+          "section_id": "rfc9111#5.2.2.9",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.611,
+          "chunk_id": "rfc9110#16.4.2/2",
+          "section_id": "rfc9110#16.4.2",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.6071,
+          "chunk_id": "rfc9111#3.2/0",
+          "section_id": "rfc9111#3.2",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.6067,
+          "chunk_id": "rfc9110#11.6.2/0",
+          "section_id": "rfc9110#11.6.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5934,
+          "chunk_id": "rfc9111#4/1",
+          "section_id": "rfc9111#4",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5906,
+          "chunk_id": "rfc9111#7.3/0",
+          "section_id": "rfc9111#7.3",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q14",
+      "question": "How does a recipient determine the length of a message body in an HTTP/1.1 message?",
+      "answerable": true,
+      "expected": [
+        "rfc9112#6.3"
+      ],
+      "rank": 1,
+      "top_score": 0.7299,
+      "top_section": "rfc9112#6.3",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7299,
+          "chunk_id": "rfc9112#6.3/4",
+          "section_id": "rfc9112#6.3",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.7247,
+          "chunk_id": "rfc9112#6.3/1",
+          "section_id": "rfc9112#6.3",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.7226,
+          "chunk_id": "rfc9112#6.3/0",
+          "section_id": "rfc9112#6.3",
+          "expected": true
+        },
+        {
+          "rank": 4,
+          "score": 0.7035,
+          "chunk_id": "rfc9112#6/0",
+          "section_id": "rfc9112#6",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.6915,
+          "chunk_id": "rfc9112#6.3/2",
+          "section_id": "rfc9112#6.3",
+          "expected": true
+        },
+        {
+          "rank": 6,
+          "score": 0.6812,
+          "chunk_id": "rfc9112#6.3/3",
+          "section_id": "rfc9112#6.3",
+          "expected": true
+        },
+        {
+          "rank": 7,
+          "score": 0.641,
+          "chunk_id": "rfc9110#2.3/0",
+          "section_id": "rfc9110#2.3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.6306,
+          "chunk_id": "rfc9110#8.6/2",
+          "section_id": "rfc9110#8.6",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.6297,
+          "chunk_id": "rfc9112#2.1/0",
+          "section_id": "rfc9112#2.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.6039,
+          "chunk_id": "rfc9112#6.2/0",
+          "section_id": "rfc9112#6.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q15",
+      "question": "How is the end of a chunked message body signalled?",
+      "answerable": true,
+      "expected": [
+        "rfc9112#7.1"
+      ],
+      "rank": 1,
+      "top_score": 0.6284,
+      "top_section": "rfc9112#7.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6284,
+          "chunk_id": "rfc9112#7.1/0",
+          "section_id": "rfc9112#7.1",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.5986,
+          "chunk_id": "rfc9112#6.3/4",
+          "section_id": "rfc9112#6.3",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.5984,
+          "chunk_id": "rfc9112#7.1.1/0",
+          "section_id": "rfc9112#7.1.1",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5522,
+          "chunk_id": "rfc9112#6.3/1",
+          "section_id": "rfc9112#6.3",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5519,
+          "chunk_id": "rfc9112#8/1",
+          "section_id": "rfc9112#8",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5434,
+          "chunk_id": "rfc9112#6.3/0",
+          "section_id": "rfc9112#6.3",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5343,
+          "chunk_id": "rfc9112#7.1.3/0",
+          "section_id": "rfc9112#7.1.3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5321,
+          "chunk_id": "rfc9112#8/0",
+          "section_id": "rfc9112#8",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5308,
+          "chunk_id": "rfc9112#7.1/1",
+          "section_id": "rfc9112#7.1",
+          "expected": true
+        },
+        {
+          "rank": 10,
+          "score": 0.5295,
+          "chunk_id": "rfc9112#6.3/3",
+          "section_id": "rfc9112#6.3",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q16",
+      "question": "Which request-target form is used for a CONNECT request?",
+      "answerable": true,
+      "expected": [
+        "rfc9112#3.2.3"
+      ],
+      "rank": 4,
+      "top_score": 0.6427,
+      "top_section": "rfc9110#9.3.6",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6427,
+          "chunk_id": "rfc9110#9.3.6/0",
+          "section_id": "rfc9110#9.3.6",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.6178,
+          "chunk_id": "rfc9112#3.2.1/0",
+          "section_id": "rfc9112#3.2.1",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.6065,
+          "chunk_id": "rfc9112#3.2/0",
+          "section_id": "rfc9112#3.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6048,
+          "chunk_id": "rfc9112#3.2.3/0",
+          "section_id": "rfc9112#3.2.3",
+          "expected": true
+        },
+        {
+          "rank": 5,
+          "score": 0.5912,
+          "chunk_id": "rfc9110#7.1/0",
+          "section_id": "rfc9110#7.1",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5885,
+          "chunk_id": "rfc9112#3.2.4/0",
+          "section_id": "rfc9112#3.2.4",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5683,
+          "chunk_id": "rfc9110#9.3.6/1",
+          "section_id": "rfc9110#9.3.6",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5394,
+          "chunk_id": "rfc9110#9.3.6/2",
+          "section_id": "rfc9110#9.3.6",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5352,
+          "chunk_id": "rfc9112#3.3/0",
+          "section_id": "rfc9112#3.3",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5129,
+          "chunk_id": "rfc9112#3.2.2/0",
+          "section_id": "rfc9112#3.2.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q17",
+      "question": "What effect does the HttpOnly attribute have on a cookie?",
+      "answerable": true,
+      "expected": [
+        "rfc6265#5.2.6"
+      ],
+      "rank": 2,
+      "top_score": 0.8047,
+      "top_section": "rfc6265#4.1.2.6",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.8047,
+          "chunk_id": "rfc6265#4.1.2.6/0",
+          "section_id": "rfc6265#4.1.2.6",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.7875,
+          "chunk_id": "rfc6265#5.2.6/0",
+          "section_id": "rfc6265#5.2.6",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.5658,
+          "chunk_id": "rfc6265#4.1.2.5/0",
+          "section_id": "rfc6265#4.1.2.5",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5606,
+          "chunk_id": "rfc6265#3.1/1",
+          "section_id": "rfc6265#3.1",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.54,
+          "chunk_id": "rfc6265#8.6/1",
+          "section_id": "rfc6265#8.6",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5388,
+          "chunk_id": "rfc6265#5.2.5/0",
+          "section_id": "rfc6265#5.2.5",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5354,
+          "chunk_id": "rfc6265#5.3/2",
+          "section_id": "rfc6265#5.3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5278,
+          "chunk_id": "rfc6265#5.4/0",
+          "section_id": "rfc6265#5.4",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5263,
+          "chunk_id": "rfc6265#8.5/0",
+          "section_id": "rfc6265#8.5",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.524,
+          "chunk_id": "rfc6265#8.5/1",
+          "section_id": "rfc6265#8.5",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q18",
+      "question": "How is domain matching defined for cookies?",
+      "answerable": true,
+      "expected": [
+        "rfc6265#5.1.3"
+      ],
+      "rank": 2,
+      "top_score": 0.6786,
+      "top_section": "rfc6265#4.1.2.3",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6786,
+          "chunk_id": "rfc6265#4.1.2.3/0",
+          "section_id": "rfc6265#4.1.2.3",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.6418,
+          "chunk_id": "rfc6265#5.1.3/0",
+          "section_id": "rfc6265#5.1.3",
+          "expected": true
+        },
+        {
+          "rank": 3,
+          "score": 0.637,
+          "chunk_id": "rfc6265#5.2.3/0",
+          "section_id": "rfc6265#5.2.3",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.6082,
+          "chunk_id": "rfc6265#5.3/2",
+          "section_id": "rfc6265#5.3",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5985,
+          "chunk_id": "rfc6265#4.1.2.3/1",
+          "section_id": "rfc6265#4.1.2.3",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5937,
+          "chunk_id": "rfc6265#5.1.4/0",
+          "section_id": "rfc6265#5.1.4",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5822,
+          "chunk_id": "rfc6265#5.3/1",
+          "section_id": "rfc6265#5.3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5592,
+          "chunk_id": "rfc6265#4.2.2/0",
+          "section_id": "rfc6265#4.2.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.55,
+          "chunk_id": "rfc6265#1/1",
+          "section_id": "rfc6265#1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5448,
+          "chunk_id": "rfc6265#8.7/0",
+          "section_id": "rfc6265#8.7",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q19",
+      "question": "What minimum size per cookie should a user agent support?",
+      "answerable": true,
+      "expected": [
+        "rfc6265#6.1"
+      ],
+      "rank": 1,
+      "top_score": 0.7728,
+      "top_section": "rfc6265#6.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.7728,
+          "chunk_id": "rfc6265#6.1/0",
+          "section_id": "rfc6265#6.1",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.6672,
+          "chunk_id": "rfc6265#5/0",
+          "section_id": "rfc6265#5",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.5889,
+          "chunk_id": "rfc6265#1/1",
+          "section_id": "rfc6265#1",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5802,
+          "chunk_id": "rfc6265#5.3/4",
+          "section_id": "rfc6265#5.3",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5625,
+          "chunk_id": "rfc6265#5.4/0",
+          "section_id": "rfc6265#5.4",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5617,
+          "chunk_id": "rfc6265#7.2/0",
+          "section_id": "rfc6265#7.2",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5353,
+          "chunk_id": "rfc6265#5.3/0",
+          "section_id": "rfc6265#5.3",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.535,
+          "chunk_id": "rfc6265#3.1/0",
+          "section_id": "rfc6265#3.1",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5242,
+          "chunk_id": "rfc6265#4.2.1/0",
+          "section_id": "rfc6265#4.2.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5217,
+          "chunk_id": "rfc6265#4.1.2.2/0",
+          "section_id": "rfc6265#4.1.2.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "q20",
+      "question": "What are the six structural characters in JSON?",
+      "answerable": true,
+      "expected": [
+        "rfc8259#2"
+      ],
+      "rank": 1,
+      "top_score": 0.592,
+      "top_section": "rfc8259#2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.592,
+          "chunk_id": "rfc8259#2/0",
+          "section_id": "rfc8259#2",
+          "expected": true
+        },
+        {
+          "rank": 2,
+          "score": 0.545,
+          "chunk_id": "rfc8259#1/0",
+          "section_id": "rfc8259#1",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.4915,
+          "chunk_id": "rfc8259#1.3/0",
+          "section_id": "rfc8259#1.3",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.4851,
+          "chunk_id": "rfc8259#13/0",
+          "section_id": "rfc8259#13",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.4806,
+          "chunk_id": "rfc8259#4/0",
+          "section_id": "rfc8259#4",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.4611,
+          "chunk_id": "rfc8259#14.2/0",
+          "section_id": "rfc8259#14.2",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.4541,
+          "chunk_id": "rfc8259#8.2/0",
+          "section_id": "rfc8259#8.2",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.4539,
+          "chunk_id": "rfc8259#3/0",
+          "section_id": "rfc8259#3",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.4471,
+          "chunk_id": "rfc8259#8.1/0",
+          "section_id": "rfc8259#8.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.4441,
+          "chunk_id": "rfc8259#1.2/0",
+          "section_id": "rfc8259#1.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u01",
+      "question": "How does HTTP/2 multiplex multiple requests over a single TCP connection?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.5479,
+      "top_section": "rfc9110#1.2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.5479,
+          "chunk_id": "rfc9110#1.2/0",
+          "section_id": "rfc9110#1.2",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.5221,
+          "chunk_id": "rfc9112#9/0",
+          "section_id": "rfc9112#9",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.5113,
+          "chunk_id": "rfc9110#1.2/1",
+          "section_id": "rfc9110#1.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5065,
+          "chunk_id": "rfc9112#9.4/0",
+          "section_id": "rfc9112#9.4",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5005,
+          "chunk_id": "rfc9112#9.3.2/0",
+          "section_id": "rfc9112#9.3.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.4815,
+          "chunk_id": "rfc9110#3.3/0",
+          "section_id": "rfc9110#3.3",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.45,
+          "chunk_id": "rfc9112#9.7/0",
+          "section_id": "rfc9112#9.7",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.4472,
+          "chunk_id": "rfc9112#9.1/0",
+          "section_id": "rfc9112#9.1",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.4443,
+          "chunk_id": "rfc9110#1.1/0",
+          "section_id": "rfc9110#1.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.4388,
+          "chunk_id": "rfc9112#9.3/0",
+          "section_id": "rfc9112#9.3",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u02",
+      "question": "What fields does an HTTP/2 HEADERS frame contain?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.6044,
+      "top_section": "rfc9110#5",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.6044,
+          "chunk_id": "rfc9110#5/0",
+          "section_id": "rfc9110#5",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.5836,
+          "chunk_id": "rfc9110#6.3/0",
+          "section_id": "rfc9110#6.3",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.5754,
+          "chunk_id": "rfc9110#9.3.2/0",
+          "section_id": "rfc9110#9.3.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.5506,
+          "chunk_id": "rfc9110#B.2/0",
+          "section_id": "rfc9110#B.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.5385,
+          "chunk_id": "rfc9110#B.3/1",
+          "section_id": "rfc9110#B.3",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.5315,
+          "chunk_id": "rfc9110#6/2",
+          "section_id": "rfc9110#6",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.5243,
+          "chunk_id": "rfc9110#19.2/6",
+          "section_id": "rfc9110#19.2",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.5231,
+          "chunk_id": "rfc9110#6.1/0",
+          "section_id": "rfc9110#6.1",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.5229,
+          "chunk_id": "rfc9110#5.1/0",
+          "section_id": "rfc9110#5.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.5188,
+          "chunk_id": "rfc9110#6/1",
+          "section_id": "rfc9110#6",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u03",
+      "question": "How does the SameSite cookie attribute restrict cross-site requests?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.5126,
+      "top_section": "rfc6265#4.1.2.6",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.5126,
+          "chunk_id": "rfc6265#4.1.2.6/0",
+          "section_id": "rfc6265#4.1.2.6",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.504,
+          "chunk_id": "rfc6265#4.1.2.3/0",
+          "section_id": "rfc6265#4.1.2.3",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.5026,
+          "chunk_id": "rfc6265#5.2.6/0",
+          "section_id": "rfc6265#5.2.6",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.4997,
+          "chunk_id": "rfc6265#3.1/1",
+          "section_id": "rfc6265#3.1",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.4927,
+          "chunk_id": "rfc6265#8.6/0",
+          "section_id": "rfc6265#8.6",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.4894,
+          "chunk_id": "rfc6265#3.1/0",
+          "section_id": "rfc6265#3.1",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.4889,
+          "chunk_id": "rfc6265#7.1/0",
+          "section_id": "rfc6265#7.1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.4869,
+          "chunk_id": "rfc6265#4.1.2.5/0",
+          "section_id": "rfc6265#4.1.2.5",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.4743,
+          "chunk_id": "rfc6265#4.1.2.4/0",
+          "section_id": "rfc6265#4.1.2.4",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.4698,
+          "chunk_id": "rfc6265#8.5/0",
+          "section_id": "rfc6265#8.5",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u04",
+      "question": "What grant types does OAuth 2.0 define?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.3751,
+      "top_section": "rfc9110#11.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.3751,
+          "chunk_id": "rfc9110#11.1/0",
+          "section_id": "rfc9110#11.1",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.3648,
+          "chunk_id": "rfc9110#19.2/3",
+          "section_id": "rfc9110#19.2",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.3639,
+          "chunk_id": "rfc9110#9.1/0",
+          "section_id": "rfc9110#9.1",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.3533,
+          "chunk_id": "rfc9110#16.4.2/0",
+          "section_id": "rfc9110#16.4.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.3506,
+          "chunk_id": "rfc9110#16.4.2/1",
+          "section_id": "rfc9110#16.4.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.3495,
+          "chunk_id": "rfc9110#9.1/1",
+          "section_id": "rfc9110#9.1",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.3482,
+          "chunk_id": "rfc9110#18.10/0",
+          "section_id": "rfc9110#18.10",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.3458,
+          "chunk_id": "rfc9110#16/0",
+          "section_id": "rfc9110#16",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.3444,
+          "chunk_id": "rfc9112#3.1/0",
+          "section_id": "rfc9112#3.1",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.3396,
+          "chunk_id": "rfc9110#19.2/4",
+          "section_id": "rfc9110#19.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u05",
+      "question": "How is the signature of a JSON Web Token computed?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.393,
+      "top_section": "rfc8259#2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.393,
+          "chunk_id": "rfc8259#2/0",
+          "section_id": "rfc8259#2",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.3764,
+          "chunk_id": "rfc9110#5.6.2/0",
+          "section_id": "rfc9110#5.6.2",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.3651,
+          "chunk_id": "rfc8259#13/0",
+          "section_id": "rfc8259#13",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.362,
+          "chunk_id": "rfc9110#11.2/0",
+          "section_id": "rfc9110#11.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.3569,
+          "chunk_id": "rfc8259#10/0",
+          "section_id": "rfc8259#10",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.3493,
+          "chunk_id": "rfc8259#11/0",
+          "section_id": "rfc8259#11",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.3462,
+          "chunk_id": "rfc8259#1.2/0",
+          "section_id": "rfc8259#1.2",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.3441,
+          "chunk_id": "rfc8259#14.1/0",
+          "section_id": "rfc8259#14.1",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.3441,
+          "chunk_id": "rfc8259#12/0",
+          "section_id": "rfc8259#12",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.3399,
+          "chunk_id": "rfc8259#14.2/0",
+          "section_id": "rfc8259#14.2",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u06",
+      "question": "What resource records does a DNS server return for an A-record query?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.4067,
+      "top_section": "rfc3986#10.2",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.4067,
+          "chunk_id": "rfc3986#10.2/0",
+          "section_id": "rfc3986#10.2",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.3989,
+          "chunk_id": "rfc9110#3.1/0",
+          "section_id": "rfc9110#3.1",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.3966,
+          "chunk_id": "rfc9110#15.4.4/1",
+          "section_id": "rfc9110#15.4.4",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.3954,
+          "chunk_id": "rfc3986#3.2.2/6",
+          "section_id": "rfc3986#3.2.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.3886,
+          "chunk_id": "rfc3986#D.2/4",
+          "section_id": "rfc3986#D.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.3849,
+          "chunk_id": "rfc9110#19.2/4",
+          "section_id": "rfc9110#19.2",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.3828,
+          "chunk_id": "rfc9110#7.1/0",
+          "section_id": "rfc9110#7.1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.381,
+          "chunk_id": "rfc3986#1.2.2/2",
+          "section_id": "rfc3986#1.2.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.3779,
+          "chunk_id": "rfc3986#3.2.2/5",
+          "section_id": "rfc3986#3.2.2",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.3771,
+          "chunk_id": "rfc3986#1.1/0",
+          "section_id": "rfc3986#1.1",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u07",
+      "question": "What is the message sequence of the TLS 1.3 handshake?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.5129,
+      "top_section": "rfc9112#9.7",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.5129,
+          "chunk_id": "rfc9112#9.7/0",
+          "section_id": "rfc9112#9.7",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.5083,
+          "chunk_id": "rfc9110#1.2/1",
+          "section_id": "rfc9110#1.2",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.45,
+          "chunk_id": "rfc9112#2/0",
+          "section_id": "rfc9112#2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.4384,
+          "chunk_id": "rfc9112#9.8/0",
+          "section_id": "rfc9112#9.8",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.4375,
+          "chunk_id": "rfc9112#11.3/0",
+          "section_id": "rfc9112#11.3",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.4367,
+          "chunk_id": "rfc9112#11.3/1",
+          "section_id": "rfc9112#11.3",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.4222,
+          "chunk_id": "rfc9110#6/1",
+          "section_id": "rfc9110#6",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.422,
+          "chunk_id": "rfc9110#1.2/0",
+          "section_id": "rfc9110#1.2",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.4197,
+          "chunk_id": "rfc9112#12.4/0",
+          "section_id": "rfc9112#12.4",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.4161,
+          "chunk_id": "rfc9112#13.1/1",
+          "section_id": "rfc9112#13.1",
+          "expected": false
+        }
+      ]
+    },
+    {
+      "id": "u08",
+      "question": "How does a browser decide whether to send a CORS preflight request?",
+      "answerable": false,
+      "expected": [],
+      "rank": null,
+      "top_score": 0.4949,
+      "top_section": "rfc9110#13.2.1",
+      "retrieved": [
+        {
+          "rank": 1,
+          "score": 0.4949,
+          "chunk_id": "rfc9110#13.2.1/0",
+          "section_id": "rfc9110#13.2.1",
+          "expected": false
+        },
+        {
+          "rank": 2,
+          "score": 0.4708,
+          "chunk_id": "rfc9110#13/0",
+          "section_id": "rfc9110#13",
+          "expected": false
+        },
+        {
+          "rank": 3,
+          "score": 0.4702,
+          "chunk_id": "rfc9110#13.2.2/0",
+          "section_id": "rfc9110#13.2.2",
+          "expected": false
+        },
+        {
+          "rank": 4,
+          "score": 0.4635,
+          "chunk_id": "rfc9111#4.3.2/0",
+          "section_id": "rfc9111#4.3.2",
+          "expected": false
+        },
+        {
+          "rank": 5,
+          "score": 0.4583,
+          "chunk_id": "rfc9110#13.2.2/1",
+          "section_id": "rfc9110#13.2.2",
+          "expected": false
+        },
+        {
+          "rank": 6,
+          "score": 0.4496,
+          "chunk_id": "rfc9110#13.2.1/1",
+          "section_id": "rfc9110#13.2.1",
+          "expected": false
+        },
+        {
+          "rank": 7,
+          "score": 0.4415,
+          "chunk_id": "rfc9111#4.3.1/0",
+          "section_id": "rfc9111#4.3.1",
+          "expected": false
+        },
+        {
+          "rank": 8,
+          "score": 0.4333,
+          "chunk_id": "rfc9110#12.1/1",
+          "section_id": "rfc9110#12.1",
+          "expected": false
+        },
+        {
+          "rank": 9,
+          "score": 0.4175,
+          "chunk_id": "rfc9110#7.3.2/0",
+          "section_id": "rfc9110#7.3.2",
+          "expected": false
+        },
+        {
+          "rank": 10,
+          "score": 0.417,
+          "chunk_id": "rfc9110#13.1/0",
+          "section_id": "rfc9110#13.1",
+          "expected": false
+        }
+      ]
+    }
+  ]
+}

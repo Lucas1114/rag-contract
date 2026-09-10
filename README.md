@@ -27,7 +27,7 @@ data or CI results support it.
 
 | Part | Status |
 |------|--------|
-| 1. Evaluation harness | specified |
+| 1. Evaluation harness | verified |
 | 2. CI regression gate | specified |
 | 3. Failure behaviour | specified |
 | 4. Index lifecycle | specified |
@@ -71,18 +71,94 @@ questions with annotated supporting passages, and 8 questions the corpus cannot
 answer, which must be refused rather than answered.
 
 Expected passages are annotated as RFC **section** ids (`rfc9110#9.2.1`), never
-chunk ids. The harness that consumes this file is `specified`, not yet
-implemented; the contract it will be held to is that each retrieved chunk
-resolves to the section it came from, and a question scores a hit when an
-expected section appears in the top results. Annotating at section level keeps
-the question set valid across changes to chunk size or overlap, which are tuning
-knobs the harness measures rather than properties it depends on.
+chunk ids. Every retrieved chunk resolves to the section it came from, and a
+question scores a hit at k when any chunk in the top k carries an expected
+section. Annotating at section level keeps the question set valid across changes
+to chunk size or overlap, which are tuning knobs the harness measures rather
+than properties it depends on.
 
-Two annotations are deliberately deferred until the harness has produced a real
+Two annotations were deliberately deferred until the harness had produced a real
 score distribution, and are documented as such in the file: multi-passage
 questions, and which of the three failure states each refusal question should
-land in. The second depends on a similarity threshold that has not been
-measured yet, so annotating it now would guarantee re-annotation later.
+land in. The distribution now exists, and it argues against the simplest answer
+to the second — see below.
+
+## Evaluation harness
+
+The corpus parses into 600 numbered sections, 564 of which carry prose of their
+own, and chunks into 868 embedded units at 220 words with 40 words of overlap.
+No chunk spans a section, so every hit reports the section it came from.
+
+    rag-contract sections     inventory the parsed corpus        no network
+    rag-contract build-index  embed and write the index          calls the API once
+    rag-contract eval         score against eval/questions.yaml  no network
+
+`eval` is deterministic numpy over committed vectors. Same index, same
+questions, same numbers, on any machine — which is the property the CI gate in
+part 2 will be built on.
+
+### Results
+
+Index `0fc1763d6701`, `text-embedding-3-small` at 1536 dimensions, over the 20
+answerable questions. Full report in
+[`eval/results/retrieval.json`](eval/results/retrieval.json).
+
+| recall@1 | recall@3 | recall@5 | recall@10 | MRR | misses |
+|----------|----------|----------|-----------|-----|--------|
+| 0.70 | 0.95 | 1.00 | 1.00 | 0.829 | 0 |
+
+Every annotated section is retrieved within the top 5. The six questions that
+miss at rank 1 lose to a plausible neighbour rather than to noise. q17 and q18
+rank the Set-Cookie attribute *syntax* in Section 4.1.2 above the user agent
+*processing* rules in Section 5 that actually define HttpOnly and domain
+matching. The worst placement, q16 at rank 4, asks which request-target form
+CONNECT uses and is beaten by RFC 9110's definition of the CONNECT method
+itself — the right topic in the wrong document.
+
+### What the score distribution says about refusal
+
+The question set left the three failure states of guarantee 3 unannotated
+because their boundaries are a threshold on similarity that had not been
+measured. Measured, that threshold does not exist:
+
+| | count | min | median | max |
+|---|---|---|---|---|
+| answerable | 20 | 0.592 | 0.729 | 0.805 |
+| unanswerable | 8 | 0.375 | 0.504 | **0.604** |
+
+The two distributions overlap. q20 — "what are the six structural characters in
+JSON?", answered squarely by RFC 8259 Section 2 at rank 1 — scores 0.592, below
+the 0.604 that u02 scores asking about HTTP/2 frame layout, which the corpus
+does not contain at all. No global cutoff separates them: any threshold that
+refuses u02 also refuses a question the corpus answers correctly.
+
+This is evidence for the design guarantee 3 already commits to rather than
+against it. Refusal cannot be a similarity threshold alone; it needs the
+grounding check that names the passage supporting each claim. Part 3 is where
+that gets built, and it now has a measured reason to exist rather than an
+assumed one.
+
+One prediction recorded during annotation held exactly. u01 asks how HTTP/2
+multiplexes requests; RFC 9110 Section 1.2 mentions that HTTP/2 introduced a
+multiplexed session layer without describing streams or frames, and it was
+annotated as a passage retrieval would surface anyway. It ranks first, at 0.548.
+
+## Running it
+
+Python 3.12, `uv` for dependencies, numpy for retrieval.
+
+```
+uv sync
+uv run rag-contract eval --quiet
+```
+
+The eval needs no API key: the vectors are committed. Rebuilding the index does,
+and is the only step that calls an external service:
+
+```
+cp .env.example .env    # then set OPENAI_API_KEY
+uv run rag-contract build-index
+```
 
 ## Design decisions
 

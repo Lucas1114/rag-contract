@@ -1,0 +1,68 @@
+{
+  "version": "0fc1763d6701",
+  "embedding_model": "text-embedding-3-small",
+  "embedding_dimensions": 1536,
+  "chunk_words": 220,
+  "overlap_words": 40,
+  "corpus_fingerprint": "da38c386b172040a6231d061c764c03ae9f48906e9ca73fb3cc1723e8ade9948",
+  "documents": [
+    {
+      "rfc": "rfc3986",
+      "sha256": "3102dae4b68cebe40337730312fcb612297b8928547267e8b3d1ee6002b2d683"
+    },
+    {
+      "rfc": "rfc6265",
+      "sha256": "dc4177094813e85a44a7897b892b76bc09160b3a03aea44f0f511f3a98f91933"
+    },
+    {
+      "rfc": "rfc8259",
+      "sha256": "61a5378f4255c720beb2a4b4a63b29540147c140f36988bf086291989b4cd2d7"
+    },
+    {
+      "rfc": "rfc9110",
+      "sha256": "21c1cdce6ab0e5509b04d84a28000836c7a087cf786efe6f04877ebfff47232a"
+    },
+    {
+      "rfc": "rfc9111",
+      "sha256": "aeb52adb3279d5f23dae34f68af11bd5cef0a0aff7ffcd014c9ca93c5302cf3e"
+    },
+    {
+      "rfc": "rfc9112",
+      "sha256": "e4f426bac6206b67fdf9e0da826154f70588db2133a0a86b15cde4ff725d8937"
+    }
+  ],
+  "section_count": 600,
+  "chunk_count": 868,
+  "questions_fingerprint": "96281a887ac6dfbe63c8421accf48334956ef82651fceea3c695b80a3d06be83",
+  "question_ids": [
+    "q01",
+    "q02",
+    "q03",
+    "q04",
+    "q05",
+    "q06",
+    "q07",
+    "q08",
+    "q09",
+    "q10",
+    "q11",
+    "q12",
+    "q13",
+    "q14",
+    "q15",
+    "q16",
+    "q17",
+    "q18",
+    "q19",
+    "q20",
+    "u01",
+    "u02",
+    "u03",
+    "u04",
+    "u05",
+    "u06",
+    "u07",
+    "u08"
+  ],
+  "built_at": "2026-09-10T13:40:19Z"
+}
