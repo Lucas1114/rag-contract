@@ -208,10 +208,11 @@ questions:
   #
   # `no_context` is annotated on no question here, and saying so is more honest
   # than manufacturing one. Brute-force cosine over 868 chunks always returns
-  # ten, so no question against this corpus can reach that state; it is the
-  # defined behaviour when the index is unavailable, which is where P04 and the
-  # index cutover of guarantee 4 meet. It is held by unit tests, not by this
-  # file.
+  # ten, so no question against this corpus can reach that state. It was never
+  # a property of a question: it is what the service does when the index is
+  # unavailable, and the registry is where an index becomes unavailable. It is
+  # held there — by a request against an unloaded registry, over HTTP as well
+  # as in process — rather than by an annotation in this file.
 
   - id: u01
     question: "How does HTTP/2 multiplex multiple requests over a single TCP connection?"
