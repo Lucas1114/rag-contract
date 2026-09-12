@@ -16,9 +16,14 @@
 #   note        the fact that answers it, for a reviewer checking by hand
 #
 # Refusal questions additionally carry:
-#   absent      why the corpus does not answer it
-#   nearest     sections retrieval is expected to surface anyway; metadata
-#               only, not scored
+#   absent          why the corpus does not answer it
+#   nearest         sections retrieval is expected to surface anyway; metadata
+#                   only, not scored
+#   expected_state  which failure state the service must land in
+#
+# Answerable questions carry no `expected_state`: an answerable question that
+# expected anything but `grounded` would be a contradiction in the annotation,
+# so the loader rejects one that carries the field at all.
 #
 # Two deliberate omissions, both to be filled in once the harness has produced
 # a real score distribution:
@@ -26,10 +31,10 @@
 #     questions (comparisons such as safe-vs-idempotent) need a `match: all`
 #     mode in the scorer; the list shape is here so adding them later needs no
 #     migration.
-#   - Refusal questions assert only that the service refuses, not which of the
-#     three failure states it enters. Those state boundaries are set by a
-#     similarity threshold that has not been measured yet; annotating them now
-#     would guarantee re-annotation later.
+# The second omission has been filled in. `expected_state` now names which
+# failure state each refusal question must land in — see the note above the
+# refusal block for what the states are and how the boundary was drawn. The
+# first omission stands: `expected` is still always one section.
 
 questions:
 
@@ -166,10 +171,46 @@ questions:
     note: "Left and right square bracket, left and right curly bracket, colon, comma."
 
   # --- Refusal path: no answer in this corpus ---
+  #
+  # `expected_state` is guarantee 3's annotation, and the states are decided by
+  # the grounding check rather than by a score:
+  #
+  #   grounded      every claim was traced to the passage it cited
+  #   partial       some claims were; the rest were withdrawn and named
+  #   unsupported   none were; the service refuses and says what it consulted
+  #   no_context    nothing was retrieved at all
+  #
+  # The boundary between `partial` and `unsupported` is whether the corpus
+  # holds a true, relevant, groundable statement that stops short of the
+  # answer. u01, u03 and u07 do: RFC 9110 Section 1.2 says HTTP/2 multiplexes
+  # and never says how, RFC 9112 Section 9.7 has a client sending a ClientHello
+  # and no handshake, RFC 6265 defines six attributes that restrict when a
+  # cookie is sent and SameSite is not among them. Those are the dangerous
+  # questions: retrieval surfaces a real passage at an ordinary score, and a
+  # drafter reading it supplies the rest from memory. The other five have no
+  # foothold in the corpus at all.
+  #
+  # This is a specification, not a prediction. What the gate pins absolutely is
+  # that none of these eight may come back `grounded` — a question the corpus
+  # cannot answer must never produce a confident answer. The partial/
+  # unsupported split is gated more loosely, because whether a foothold
+  # passage lands inside the retrieval window can legitimately move with the
+  # chunk parameters.
+  #
+  # `no_context` is annotated on no question here, and saying so is more honest
+  # than manufacturing one. Brute-force cosine over 868 chunks always returns
+  # ten, so no question against this corpus can reach that state; it is the
+  # defined behaviour when the index is unavailable, which is where P04 and the
+  # index cutover of guarantee 4 meet. It is held by unit tests, not by this
+  # file.
 
   - id: u01
     question: "How does HTTP/2 multiplex multiple requests over a single TCP connection?"
     answerable: false
+    expected_state: partial
+    state_reason: >-
+      RFC 9110 Section 1.2 states that HTTP/2 introduced a multiplexed
+      session layer. That grounds; streams, frames and flow control do not.
     absent: >-
       HTTP/2 is RFC 9113, not in the corpus. RFC 9110 Section 1.2 notes in
       passing that HTTP/2 introduced a multiplexed session layer, but describes
@@ -181,36 +222,61 @@ questions:
   - id: u02
     question: "What fields does an HTTP/2 HEADERS frame contain?"
     answerable: false
+    expected_state: unsupported
+    state_reason: >-
+      Nothing retrieved mentions a frame of any kind. Every claim about
+      HEADERS fields cites a passage that does not contain it.
     absent: "HTTP/2 frame layout is RFC 9113, which is not in the corpus."
     nearest: []
 
   - id: u03
     question: "How does the SameSite cookie attribute restrict cross-site requests?"
     answerable: false
+    expected_state: partial
+    state_reason: >-
+      The six attributes that restrict when a cookie is sent are in the
+      corpus and ground. SameSite is not one of them, and no claim naming it
+      can.
     absent: "SameSite was introduced after RFC 6265; the corpus has the original six attributes only."
     nearest: ["rfc6265#5.2.5", "rfc6265#5.4"]
 
   - id: u04
     question: "What grant types does OAuth 2.0 define?"
     answerable: false
+    expected_state: unsupported
+    state_reason: >-
+      The generic authentication framework is retrieved, but a grant type
+      has no counterpart in it. Nothing about the question grounds.
     absent: "OAuth 2.0 is RFC 6749; the corpus carries only the generic HTTP authentication framework."
     nearest: ["rfc9110#11.1", "rfc9110#11.3"]
 
   - id: u05
     question: "How is the signature of a JSON Web Token computed?"
     answerable: false
+    expected_state: unsupported
+    state_reason: >-
+      Retrieval returns the JSON grammar. The corpus has no signature, key
+      or token material to ground a claim against.
     absent: "JWT and JWS are RFCs 7519 and 7515; the corpus has the JSON grammar but no token format."
     nearest: ["rfc8259#7", "rfc9110#11.4"]
 
   - id: u06
     question: "What resource records does a DNS server return for an A-record query?"
     answerable: false
+    expected_state: unsupported
+    state_reason: >-
+      A different layer entirely. Nothing retrieved is about name
+      resolution.
     absent: "DNS is RFC 1035, a different layer entirely."
     nearest: []
 
   - id: u07
     question: "What is the message sequence of the TLS 1.3 handshake?"
     answerable: false
+    expected_state: partial
+    state_reason: >-
+      RFC 9112 Section 9.7 has a client sending a ClientHello to begin the
+      handshake. That grounds; the message sequence does not.
     absent: >-
       TLS 1.3 is RFC 8446, not in the corpus. RFC 9112 Section 9.7 mentions
       sending a ClientHello to begin the handshake, but gives no message
@@ -220,5 +286,9 @@ questions:
   - id: u08
     question: "How does a browser decide whether to send a CORS preflight request?"
     answerable: false
+    expected_state: unsupported
+    state_reason: >-
+      Retrieval lands on conditional-request preconditions, a false friend
+      of 'preflight'. No claim about CORS grounds against them.
     absent: "CORS is the WHATWG Fetch standard, not an RFC, and is not in the corpus."
     nearest: ["rfc9110#9.3.7", "rfc9110#7.8"]

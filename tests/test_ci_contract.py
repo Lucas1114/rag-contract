@@ -23,7 +23,10 @@ NETWORK_MODULES = ("httpx", "requests", "urllib3", "openai", "anthropic")
 # Everything the gate pulls in. `embedding` is deliberately absent: it is
 # imported inside `cmd_build_index`, not at module scope, which is what keeps
 # the network client out of this graph.
-GATE_IMPORT = "from rag_contract import cli, evaluate, evalset, gate, index, retrieval"
+GATE_IMPORT = (
+    "from rag_contract import "
+    "answering, cli, evaluate, evalset, gate, grounding, index, retrieval"
+)
 
 
 def test_the_gate_import_graph_reaches_no_network_client():
