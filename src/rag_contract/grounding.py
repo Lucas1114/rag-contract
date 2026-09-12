@@ -51,6 +51,7 @@ dependency, which is the opposite of what this project is for.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 # The one tunable in the check. A claim rephrases its passage — it does not
@@ -270,5 +271,30 @@ def check_claims(
     claims: list[Claim],
     passages: dict[str, str],
     coverage_floor: float = COVERAGE_FLOOR,
+    checkpoint: Callable[[], None] | None = None,
 ) -> list[Verdict]:
-    return [check_claim(c, passages, coverage_floor) for c in claims]
+    """Check every claim, or none.
+
+    `checkpoint` is called once per claim and may raise, which is how
+    guarantee 5's latency deadline reaches the only unbounded loop in the
+    request. This loop is where the time goes — each claim tokenises its whole
+    cited passage — and the claim count comes from the model rather than from
+    the corpus, so it is the one input the service does not control.
+
+    It is given a bare callable rather than a budget object because this module
+    has no business knowing what a budget is. All it does is offer the caller a
+    place to stand between claims.
+
+    When it raises, the partial verdict list goes with it, deliberately. A
+    grounding check that stopped part way through has not checked the remaining
+    claims, and an answer assembled from what it managed to reach would report
+    `grounded` or `partial` on the strength of claims nobody verified — the
+    exact failure this module exists to prevent, arrived at from the latency
+    side. A truncated check is not a weaker check, it is an unsound one.
+    """
+    verdicts = []
+    for claim in claims:
+        if checkpoint is not None:
+            checkpoint()
+        verdicts.append(check_claim(claim, passages, coverage_floor))
+    return verdicts

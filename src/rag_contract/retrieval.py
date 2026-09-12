@@ -1,10 +1,18 @@
 """Brute-force cosine retrieval over the committed vectors.
 
-868 chunks of 1024 float32 is 3.5 MB. A single numpy matrix-vector product
-ranks all of them in well under a millisecond, which leaves the latency budget
-of guarantee 5 entirely to the answer step. A vector database would add a
-component to version, operate and cut over for no measurable benefit — and
+868 chunks of 1536 float32 is 5.1 MB. A single numpy matrix-vector product
+ranks all of them in 0.026 ms, measured, and flat across all 28 questions —
+there is no question this corpus makes slow. A vector database would add a
+component to version, operate and cut over for no measurable benefit, and
 knowing which problems do not need one is part of the point.
+
+This docstring used to say that retrieval leaves guarantee 5's latency budget
+"entirely to the answer step", which was a guess and was wrong about which step.
+The answer step replays a committed fixture and is a dictionary lookup. What
+actually spends the request is the grounding check downstream of it, at up to
+7.4 ms — two orders of magnitude more than this function — because its cost
+scales with the number of claims the model returned. `budget.py` is where that
+measurement and its consequences live.
 
 Vectors are L2-normalised at build time, so cosine similarity is a dot product.
 """

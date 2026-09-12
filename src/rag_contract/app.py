@@ -16,6 +16,12 @@ the body is absent from exactly the case where attribution matters most — a
 503 carrying no answer still has to say which index, or the absence of one,
 produced it.
 
+Every `/answer` response carries what the request spent against its deadline,
+including the two that carry no answer. That is guarantee 5's "reported per
+request", and reporting it on the failures is the part that matters: a request
+abandoned for spending its budget has to say which stage spent it, or an
+operator is left with a 503 and a guess.
+
 What is not here
 ----------------
 
@@ -35,6 +41,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import JSONResponse
 
+from .budget import DeadlineExceeded
+from .gate import load_thresholds
 from .index import IndexError_
 from .lifecycle import index_status
 from .registry import IndexRegistry
@@ -61,7 +69,9 @@ def create_app(service: Service | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if app.state.service is None:
-            app.state.service = Service.from_committed(_startup_registry())
+            app.state.service = Service.from_committed(
+                _startup_registry(), load_thresholds().budget
+            )
         yield
 
     app = FastAPI(
@@ -96,6 +106,7 @@ def create_app(service: Service | None = None) -> FastAPI:
 
     @app.get("/answer/{question_id}")
     def answer(question_id: str, response: Response) -> Response:
+        del response
         try:
             answered = current().answer(question_id)
         except UnknownQuestion as exc:
@@ -106,8 +117,23 @@ def create_app(service: Service | None = None) -> FastAPI:
                     "set at /questions and takes no free-text input."
                 ),
             ) from exc
+        except DeadlineExceeded as exc:
+            # Not an answer state, so not `answered.to_dict()`. The request was
+            # abandoned mid-check, which means the service has no verdict on
+            # the corpus to report — only what it spent getting nowhere. A
+            # service error, like `no_context`, and a 503 for the same reason.
+            version = current().registry.version
+            return JSONResponse(
+                content={
+                    "error": "deadline exceeded",
+                    "detail": exc.detail,
+                    "index_version": version,
+                    "budget": exc.spend.to_dict(),
+                },
+                status_code=503,
+                headers={"X-Index-Version": version or "none"},
+            )
 
-        del response
         return JSONResponse(
             content=answered.to_dict(),
             status_code=answered.state.http_status,

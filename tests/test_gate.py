@@ -9,6 +9,7 @@ without anyone recording what it costs.
 
 import pytest
 
+from rag_contract.budget import BudgetLimits
 from rag_contract.gate import (
     ThresholdError,
     Thresholds,
@@ -29,6 +30,9 @@ refusal:
   min_grounded_rate: 0.80
   min_state_agreement: 0.75
   max_answered_unanswerable: 1
+budget:
+  request_deadline_ms: 150.0
+  max_request_ms: 50.0
 """
 
 REFUSAL = {
@@ -38,12 +42,16 @@ REFUSAL = {
 }
 
 
-def thresholds(aggregate=None, max_rank=None, refusal=None):
+BUDGET = {"request_deadline_ms": 150.0, "max_request_ms": 50.0}
+
+
+def thresholds(aggregate=None, max_rank=None, refusal=None, budget=None):
     return Thresholds(
         aggregate=aggregate if aggregate is not None else {"recall_at_1": 0.6},
         max_rank=max_rank if max_rank is not None else {"q01": 3, "q02": 3},
         measured={},
         refusal=refusal if refusal is not None else dict(REFUSAL),
+        budget=BudgetLimits.from_mapping(budget if budget is not None else BUDGET),
     )
 
 
@@ -176,7 +184,14 @@ def test_a_file_with_no_rank_ceilings_is_an_error(tmp_path):
 
 def test_a_floor_on_an_unknown_metric_is_rejected_at_load(tmp_path):
     with pytest.raises(ThresholdError, match="precision_at_1"):
-        load_thresholds(write(tmp_path, THRESHOLDS_YAML + "  precision_at_1: 0.9\n"))
+        load_thresholds(
+            write(
+                tmp_path,
+                THRESHOLDS_YAML.replace(
+                    "aggregate:\n", "aggregate:\n  precision_at_1: 0.9\n"
+                ),
+            )
+        )
 
 
 def test_a_nonsensical_rank_ceiling_is_rejected_at_load(tmp_path):
@@ -266,7 +281,9 @@ def test_a_half_set_refusal_block_is_rejected(tmp_path):
 
 def test_an_unknown_refusal_threshold_is_rejected(tmp_path):
     path = tmp_path / "thresholds.yaml"
-    path.write_text(THRESHOLDS_YAML + "  min_vibes: 0.9\n")
+    path.write_text(
+        THRESHOLDS_YAML.replace("refusal:\n", "refusal:\n  min_vibes: 0.9\n")
+    )
     with pytest.raises(ThresholdError, match="does not report"):
         load_thresholds(path)
 

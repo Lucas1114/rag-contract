@@ -30,6 +30,11 @@ One more check keeps the file honest: the set of gated questions must be exactly
 the set of answerable questions in the report. A question added to the question
 set without a recorded ceiling fails the gate rather than slipping in ungated.
 
+`eval/thresholds.yaml` also carries guarantee 5's budget, which this module
+validates at load time and does not yet check anything against. The service
+reads it to know the deadline it serves under; the checks that hold it come
+next.
+
 Freshness is the odd one out and is not in `eval/thresholds.yaml`, because
 there is no bar to set. Either the committed vectors were built from the corpus
 in this commit or they were not, and a project that could choose to tolerate
@@ -45,6 +50,7 @@ from pathlib import Path
 
 import yaml
 
+from .budget import BudgetError, BudgetLimits
 from .lifecycle import IndexStatus
 
 THRESHOLDS_PATH = Path(__file__).resolve().parents[2] / "eval" / "thresholds.yaml"
@@ -72,6 +78,7 @@ class Thresholds:
     max_rank: dict[str, int]
     measured: dict
     refusal: dict[str, float]
+    budget: BudgetLimits
 
 
 @dataclass(frozen=True)
@@ -132,11 +139,26 @@ def load_thresholds(path: Path = THRESHOLDS_PATH) -> Thresholds:
             "service that refuses everything."
         )
 
+    # Guarantee 5. `BudgetLimits` validates its own coherence — a gate bar with
+    # no headroom under the deadline, a command budgeted above the day's cap —
+    # because those are properties of the numbers rather than of any report,
+    # and a file that cannot be satisfied should be refused before anything is
+    # measured against it.
+    # Re-raised as a ThresholdError so that everything wrong with this file
+    # reaches a caller as one kind of problem. `budget.py` owns the rules
+    # because they are rules about its own numbers; it does not own what the
+    # reader of the threshold file raises.
+    try:
+        budget = BudgetLimits.from_mapping(raw.get("budget"))
+    except BudgetError as exc:
+        raise ThresholdError(f"{path}: {exc}") from exc
+
     return Thresholds(
         aggregate={k: float(v) for k, v in aggregate.items()},
         max_rank={str(k): int(v) for k, v in max_rank.items()},
         measured=raw.get("measured") or {},
         refusal={k: float(v) for k, v in refusal.items()},
+        budget=budget,
     )
 
 

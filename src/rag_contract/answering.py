@@ -50,6 +50,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from .budget import Spend
 from .grounding import COVERAGE_FLOOR, Claim, Verdict, check_claims
 from .retrieval import Hit
 
@@ -139,6 +140,13 @@ class Answer:
     withdrawn: list[Verdict] = field(default_factory=list)
     consulted: list[Passage] = field(default_factory=list)
     message: str = ""
+    # What this request spent, when it was served under a deadline. `None`
+    # when it was not — the evals call `decide` directly and their reports are
+    # committed artefacts that have to be byte-stable across runs, so a wall
+    # clock has no place in them. `to_dict` omits the key rather than emitting
+    # a null, which is what keeps eval/results/answers.json unchanged by
+    # guarantee 5 existing.
+    spend: Spend | None = None
 
     @property
     def citations(self) -> list[str]:
@@ -161,7 +169,7 @@ class Answer:
         return " ".join(f"{v.text} [{v.citation}]" for v in self.supported)
 
     def to_dict(self) -> dict:
-        return {
+        payload = {
             "question": self.question,
             "state": str(self.state),
             "http_status": self.state.http_status,
@@ -197,6 +205,9 @@ class Answer:
                 for p in self.consulted
             ],
         }
+        if self.spend is not None:
+            payload["budget"] = self.spend.to_dict()
+        return payload
 
 
 def decide(
@@ -206,6 +217,7 @@ def decide(
     passages: list[Passage],
     claims: list[Claim],
     coverage_floor: float = COVERAGE_FLOOR,
+    spend: Spend | None = None,
 ) -> Answer:
     """Grounding check first, state second. This is the whole guarantee.
 
@@ -220,10 +232,16 @@ def decide(
             state=AnswerState.NO_CONTEXT,
             index_version=index_version,
             message=NO_CONTEXT_MESSAGE,
+            spend=spend,
         )
 
     texts = {p.section_id: p.text for p in passages}
-    verdicts = check_claims(claims, texts, coverage_floor)
+    verdicts = check_claims(
+        claims,
+        texts,
+        coverage_floor,
+        checkpoint=None if spend is None else spend.stage("grounding"),
+    )
     supported = [v for v in verdicts if v.grounded]
     withdrawn = [v for v in verdicts if not v.grounded]
 
@@ -238,6 +256,7 @@ def decide(
             withdrawn=withdrawn,
             consulted=passages,
             message=REFUSAL,
+            spend=spend,
         )
 
     state = AnswerState.GROUNDED if not withdrawn else AnswerState.PARTIAL
@@ -248,6 +267,7 @@ def decide(
         supported=supported,
         withdrawn=withdrawn,
         consulted=passages,
+        spend=spend,
         message=(
             ""
             if state is AnswerState.GROUNDED

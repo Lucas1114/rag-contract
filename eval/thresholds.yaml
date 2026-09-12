@@ -130,3 +130,37 @@ refusal:
   # not grow. A second question reaching `grounded` is a regression whatever
   # the cause, and fails the build.
   max_answered_unanswerable: 1
+
+# Budgets — guarantee 5.
+#
+# Latency and cost are one guarantee because they are one question: what a
+# request, or a command, is allowed to spend before the behaviour changes. This
+# is the latency half. Everything here is a ceiling, and `budget.py` refuses the
+# file outright when these numbers contradict each other.
+budget:
+  # What the service enforces per request. Exceeding it abandons the request
+  # with a 503 rather than answering: the deadline is checked inside the
+  # grounding check's per-claim loop, and a check that stopped part way through
+  # has not checked the remaining claims. See budget.py.
+  #
+  # 150 ms is a deliberate promise rather than a measurement. Nothing served
+  # today comes close — the slowest question measures 7.4 ms — and that is the
+  # point: the ceiling exists for the one input on the request path that the
+  # corpus does not bound, which is the number of claims the model returns.
+  request_deadline_ms: 150.0
+
+  # The bar the gate holds the measured slowest question to.
+  #
+  # This is the only non-deterministic check in the gate, and the only number in
+  # this file that is not reproducible on another machine. Everything else here
+  # is numpy over committed vectors and comes out identical anywhere. So the bar
+  # is sized for an order of magnitude and not for a measurement: 7.4 ms locally,
+  # perhaps three times that on a loaded CI runner, against a 50 ms bar. It is
+  # worth having anyway because the regression it catches is an order of
+  # magnitude — the request path acquiring work that scales with something
+  # nothing bounds — and a 10% drift is not what it is looking for.
+  #
+  # It must stay at or below half the deadline above, which budget.py enforces.
+  # A bar sitting at the deadline would mean a green build on the last commit
+  # before requests start being abandoned.
+  max_request_ms: 50.0

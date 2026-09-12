@@ -7,17 +7,20 @@ the 503 that an unavailable index produces.
 """
 
 import threading
+import time
 
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
 from rag_contract.app import create_app
+from rag_contract.budget import Budget
 from rag_contract.evalset import Question
 from rag_contract.registry import IndexRegistry
 from rag_contract.service import Service
 
 from .synthetic import make_index
+from .test_budget import TickingClock
 from .test_registry import BlockingDrafter, StaticDrafter
 
 VECTORS = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
@@ -156,3 +159,72 @@ class TestCutoverOverHttp:
         assert responses["before"].status_code == 200
         assert responses["before"].json()["index_version"] == "a" * 12
         assert http.get("/answer/qa").status_code == 503
+
+
+# --- Guarantee 5: what a request spent, reported on the request -------------
+
+
+def budgeted_client(registry, deadline_ms=150.0, clock=None, drafter=None):
+    service = Service(
+        registry=registry,
+        questions=QUESTIONS,
+        drafter=drafter or StaticDrafter(),
+        budget=Budget(deadline_ms=deadline_ms, clock=clock or time.perf_counter),
+    )
+    return TestClient(create_app(service), raise_server_exceptions=False)
+
+
+def test_an_answer_reports_what_the_request_spent(serving):
+    response = budgeted_client(serving).get("/answer/qa")
+
+    assert response.status_code == 200
+    budget = response.json()["budget"]
+    assert budget["deadline_ms"] == 150.0
+    assert budget["exceeded"] is False
+    assert set(budget["stages"]) >= {"retrieval", "drafting", "grounding"}
+    assert budget["elapsed_ms"] < 150.0
+
+
+def test_a_request_that_spends_its_budget_is_abandoned_with_a_503(serving):
+    """Not a refusal. The service has no verdict on the corpus to report.
+
+    A refusal is a 200 naming the passages it consulted and the claims it
+    rejected. This one abandoned the grounding check part way through, so it
+    has neither — only what it spent getting nowhere.
+    """
+    response = budgeted_client(
+        serving, deadline_ms=0.001, clock=TickingClock(ms_per_read=5.0)
+    ).get("/answer/qa")
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["error"] == "deadline exceeded"
+    assert "state" not in payload
+    assert "answer" not in payload
+    assert payload["budget"]["exceeded"] is True
+
+
+def test_an_abandoned_request_still_names_the_index_it_was_serving(serving):
+    """The header carries attribution precisely where the body has no answer."""
+    response = budgeted_client(
+        serving, deadline_ms=0.001, clock=TickingClock(ms_per_read=5.0)
+    ).get("/answer/qa")
+
+    assert response.headers["x-index-version"] == "a" * 12
+    assert response.json()["index_version"] == "a" * 12
+
+
+def test_the_abandonment_says_why_a_partial_answer_was_not_given(serving):
+    response = budgeted_client(
+        serving, deadline_ms=0.001, clock=TickingClock(ms_per_read=5.0)
+    ).get("/answer/qa")
+
+    detail = response.json()["detail"]
+    assert "abandoned" in detail
+    assert "remaining claims" in detail
+
+
+def test_an_unknown_question_is_still_a_404_under_a_deadline(serving):
+    """The budget is acquired before the question is looked up, and neither
+    decision is allowed to hide the other."""
+    assert budgeted_client(serving).get("/answer/nope").status_code == 404
