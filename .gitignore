@@ -1,7 +1,7 @@
-/CLAUDE.md
-/AGENTS.md
-/PROJECT_RULES.md
-/.handoffs/
+CLAUDE.md
+AGENTS.md
+PROJECT_RULES.md
+.handoffs/
 
 .venv/
 __pycache__/
@@ -12,4 +12,4 @@ __pycache__/
 .DS_Store
 .pytest_cache/
 .ruff_cache/
-/.spend/
+.spend/
