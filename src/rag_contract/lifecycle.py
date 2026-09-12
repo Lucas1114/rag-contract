@@ -103,8 +103,19 @@ class IndexStatus:
 def index_status(index: Index, *, params: ChunkParams | None = None) -> IndexStatus:
     """Compare a loaded index against the corpus and question set on disk.
 
-    Pure file reads and hashing: no network, no key, and cheap enough to run on
-    every health check.
+    Pure file reads and hashing: no network and no key. It is *not* cheap, and
+    this docstring used to say it was. Measured over the HTTP surface, the
+    `/health` route that calls it costs 7.6 ms — as much as the slowest
+    question the service answers — because it re-reads and re-hashes the whole
+    corpus on every call.
+
+    Left as it is rather than cached, deliberately. A cached answer to "does
+    the index still describe the corpus?" is an answer that can be stale in the
+    one direction that matters, and guarantee 4 is worth more than the
+    milliseconds. What the measurement changed is not this function but what
+    covers it: `/health` is the most expensive route on the surface and the
+    only one with no deadline, which is why the rate limit in `ratelimit.py`
+    applies to it rather than exempting it the way health checks usually are.
     """
     params = params or ChunkParams()
     documents = load_documents()

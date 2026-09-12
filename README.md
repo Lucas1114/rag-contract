@@ -17,7 +17,7 @@ are enforced rather than logged.
 | 2 | Quality regressions fail the build | The threshold is committed to `eval/thresholds.yaml`. CI runs the eval and fails below it. Threshold changes are visible in diffs. |
 | 3 | The service refuses rather than invents | Every answer is a list of claims, each naming the passage that supports it, and a grounding check decides per claim whether that passage actually contains it. Three distinct failure states follow from that check, with three distinct responses. |
 | 4 | Every answer is attributable to an index version | Index versions are content-addressed and returned in response metadata. A corpus change fails the build until the index is rebuilt, and a cutover does not drop requests in flight or move them onto the new index. |
-| 5 | Latency and cost are ceilings, not advice | A served request runs under a deadline and is abandoned rather than answered when it spends it. The two commands that call an API ask a committed daily cap before every call and stop rather than break it. Both ceilings are in `eval/thresholds.yaml` and both are checked by the gate. |
+| 5 | Latency, cost and request rate are ceilings, not advice | A served request runs under a deadline and is abandoned rather than answered when it spends it. The two commands that call an API ask a committed daily cap before every call and stop rather than break it. A client asking past its committed allowance is refused with a 429 and a `Retry-After` rather than served slowly. All three ceilings are in `eval/thresholds.yaml` and all three are checked by the gate. |
 
 ## Status
 
@@ -100,8 +100,9 @@ No chunk spans a section, so every hit reports the section it came from.
     rag-contract eval           score against eval/questions.yaml      no network
     rag-contract eval-answers   score the failure behaviour            no network
     rag-contract answer         answer one question, showing its state no network
-    rag-contract gate           hold both evals, index freshness and the
-                                budgets to eval/thresholds.yaml           no network
+    rag-contract gate           hold both evals, index freshness, the budgets
+                                and the served rate limit to
+                                eval/thresholds.yaml                   no network
 
 `eval` is deterministic numpy over committed vectors. Same index, same
 questions, same numbers, on any machine — which is the property the CI gate in
@@ -419,6 +420,18 @@ A question id outside the fixed set is a 404. There is no free-text endpoint,
 and that constraint is what lets the answer step replay a committed draft
 rather than calling a model on the request path.
 
+A client past its committed allowance gets a 429 with a `Retry-After` and no
+answer at all. That refusal is the one rule on this surface decided by the
+surface, and it is the same rule as everything else here read from the other
+end: a rule belongs in `answering.py` when the eval harness can measure it, and
+the harness has no notion of a caller — it replays a fixed question set, with no
+client and no second client to be crowded out by the first. So the limit runs as
+middleware, before a handler and before an index is acquired, and it applies to
+every route. Its response carries no `index_version` and no `X-Index-Version`,
+because a 429 is not an answer that failed but a request that was never made,
+and naming a version on it would attribute a refusal to vectors that never saw
+it.
+
 There is no endpoint that reloads or unloads the index. Cutover is an
 operational action; an unauthenticated route that swaps the index a public
 service answers from would be a worse liability than the feature is worth.
@@ -542,6 +555,115 @@ invoice billed at 75,250, a factor of 1.44. Every priced figure above is
 therefore conservative, which is the only safe direction for a cap — one built
 on an optimistic estimate authorises the call that breaks it.
 
+### The third ceiling protects the first one
+
+A rate limit is the last of the three and the one whose justification had to be
+found rather than borrowed. The usual argument is cost, and there is none here:
+a served request uses committed vectors and a committed draft, holds no key and
+spends nothing. The second usual argument is per-request work, and that is what
+the deadline above already does. So the question was what is left, and measuring
+answered it more sharply than "availability" would have.
+
+One process, one client per thread, all of them asking for `/answer/q14`:
+
+| clients | req/s | observed p99 | service reported (median) | abandoned |
+|---------|-------|--------------|---------------------------|-----------|
+| 1 | 131 | 8.6 ms | 7.0 ms | 0 |
+| 4 | 134 | 44.7 ms | 8.5 ms | 0 |
+| 8 | 134 | 82.2 ms | 14.9 ms | 0 |
+| 16 | 134 | 179.4 ms | 27.2 ms | 0 |
+| 32 | 134 | 297.2 ms | 39.2 ms | 0 |
+| 64 | 139 | 481.2 ms | 57.2 ms | **10.2%** |
+
+Three things are in that table.
+
+**Throughput is flat.** 131 requests a second at one client and 139 at
+sixty-four. The answer path is synchronous CPU work under one interpreter lock,
+so concurrency buys nothing — a process serves about 130 requests a second and
+extra callers only add queue.
+
+**The deadline cannot see the queue.** At 32 clients a caller waits 297 ms and
+the service reports having spent 39. `Spend` starts when `Service.answer`
+begins, which is after the request was accepted, parsed and handed to a worker
+thread. Guarantee 5's ceiling is a ceiling on *service* time, and until this
+measurement nothing in the repository bounded the time a client actually waits.
+
+**And past a point the deadline fires on the wrong requests.** At 64 clients one
+request in ten is abandoned with a 503, and the spend reports on them look like
+this:
+
+    "stages": {"retrieval": 124.957, "drafting": 0.001, "grounding": 28.462}
+
+125 ms in retrieval — a stage that does 0.026 ms of work. Nothing was retrieved
+slowly. The thread holding that request was descheduled and the wall clock kept
+running; the request did nothing unusual and was abandoned anyway, because
+someone else was loud.
+
+That is the argument, and it is not the one this section set out to make.
+Without a limit on how fast one client may ask, **the mechanism that holds
+guarantee 5 becomes a way to deny service**: a single caller can push the
+process into contention until other callers' requests are abandoned for
+spending a budget they never spent on work. The rate limit is what keeps the
+deadline pointed at the thing it was built to catch — an unbounded number of
+claims — rather than at whoever happened to be sharing the process.
+
+    max_requests_per_minute: 60   how fast one client may ask
+    max_client_burst:        10   how many of those it may spend at once
+
+Two numbers, because a rate alone does not describe the failure above: 60 a
+minute permits 60 at once, and simultaneous is exactly what produced the
+abandoned requests. The depth is what bounds that, and 10 sits well inside the
+region where the table shows nothing being abandoned.
+
+The rate is bounded from both directions, which is what makes it a number rather
+than a preference. From above by arithmetic: a client allowed R requests a
+minute, each entitled to the 150 ms deadline, can demand R x 150 ms of a
+process-minute, and `budget.py` refuses the threshold file if that exceeds a
+quarter of one — so no allowance above 100 a minute can be committed while the
+deadline stands. Lengthening the deadline tightens the allowance automatically,
+because the two are one statement. From below by a workload that cannot grow:
+the corpus is fixed, the drafts are committed, and the answer to q14 today is
+the answer to q14 tomorrow byte for byte, so 60 a minute is the entire
+28-question set twice over, every minute, and no honest caller has a reason to
+ask again.
+
+### Refusing, not waiting — and what this does not cover
+
+`embedding.py` already contained a rate limiter and it is deliberately not
+reused. It solves the opposite problem from the opposite side: it schedules
+*our* requests against a vendor's published allowance, and sleeps when one does
+not fit. Blocking is right there — one caller, a batch job, waiting cheaper than
+failing. Every one of those properties is inverted on a served request, and a
+limiter that made a client wait would be holding a worker thread open for
+exactly the caller it has decided is asking for too much, which is the
+contention above with extra steps. This one refuses immediately and says when to
+come back.
+
+A client is the socket peer and nothing else. `X-Forwarded-For` is deliberately
+not consulted, because it is written by the caller: honouring it would let any
+client mint a fresh identity per request and step over the limit by setting a
+header. The cost of that is real and belongs in the open — behind a reverse
+proxy every request arrives from the proxy, all callers share one bucket, and
+the limit becomes a global one. A deployment that terminates TLS elsewhere has
+to hand this service the real peer or accept that behaviour.
+
+The limit covers every route, `/health` included. Exempting it is the obvious
+kindness and the wrong one: `/health` measures 7.6 ms — as much as the slowest
+question — because it re-reads and re-hashes the whole corpus to say whether the
+index still describes it, and it is the only route with no deadline. An
+exemption there would be a hole shaped exactly like the cheapest way to take the
+process. The consequence is named rather than engineered around: a liveness
+probe is a client like any other here, so it belongs on a path this limiter does
+not see rather than on a public route carving an exemption anyone can use.
+Measuring also falsified a claim already in the repository — `lifecycle.py` said
+`index_status` was "cheap enough to run on every health check" — and the
+docstring now says what it costs and why it is still not cached.
+
+What a per-client limit cannot do is bound many clients rather than one. That
+needs a global concurrency limit or something upstream of the process, and
+neither is in this repository. Guarantee 5 is about ceilings this service
+enforces on itself, and the edge of that is worth stating rather than implying.
+
 ## Regression gate
 
 `eval/thresholds.yaml` is the committed bar. `rag-contract gate` reruns both
@@ -551,8 +673,8 @@ file and appears in the diff of the commit that does it.
 
 It applies five independent kinds of check — the two below, plus the refusal
 thresholds described under failure behaviour above, the index freshness check
-described under index lifecycle, and the budgets described above. Thirty-two
-checks in total on this commit, thirty-four with `--check-report`.
+described under index lifecycle, and the budgets described above. Thirty-three
+checks in total on this commit, thirty-five with `--check-report`.
 
 **Aggregate floors** on recall@1, recall@5, recall@10 and MRR. Each sits below
 the measured value with deliberate headroom: with 20 answerable questions one
@@ -580,10 +702,26 @@ Every answerable question must carry a ceiling and no others may. Adding a
 question without recording what it costs fails the gate, which forces the new
 question into the same diff as its bar.
 
-**Four budget checks**, described above: the slowest measured request against
+**Five budget checks**, described above: the slowest measured request against
 the bar under the served deadline, the priced cost of a rebuild and of a
-re-record against their ceilings, and the worst-case drafting run against the
-day's cap.
+re-record against their ceilings, the worst-case drafting run against the day's
+cap, and the rate limit.
+
+The last one is shaped like the freshness check rather than like the other four,
+because it holds no threshold. The allowance is already held at load time —
+`budget.py` refuses a file whose rate lets one client demand more than a quarter
+of a process-minute — so comparing it again here would hold nothing new. What is
+held nowhere else is that the limiter is still *installed*, which is how rate
+limits actually die: nobody edits them to zero, they get lifted out of a
+middleware stack during unrelated work and no test notices because every test
+sends one request. So the gate drives the real ASGI application, from one
+client, on a frozen clock, exactly one request past the committed burst. The
+frozen clock is what makes a wall-clock control deterministic enough to gate on:
+nothing refills, so the allowance is spent in a fixed number of requests and the
+check produces the same result on any machine. It does not use a test client to
+do that — `starlette.testclient` imports httpx, and a test asserts the gate's
+import graph reaches no HTTP client — so it calls the application the way a
+server would, which is all a test client does underneath.
 
 The latency one is the first check in this gate that is not deterministic, and
 that is worth stating rather than burying. Every other number here is numpy over
@@ -620,7 +758,11 @@ section. Tightening `max_answered_unanswerable` to 0 and `min_grounded_rate` to
 still green. Restoring `MAX_TOKENS` to 4000 turns it red on worst-case drafting
 alone, at $3.9035 against the $2.00 cap; tightening the latency bar to 1 ms
 names q14; tightening the rebuild ceiling below the corpus names `build-index`.
-A gate that has only ever been green is decoration.
+Lifting the rate limiter out of the middleware stack turns it red on the rate
+limit check alone, at eleven requests from one client and none refused, and so
+does a 429 that carries no `Retry-After`; raising the allowance to 400 a minute
+is refused at load instead, naming the whole process-minute one client would
+then be entitled to. A gate that has only ever been green is decoration.
 
 ## Running it
 
@@ -643,6 +785,10 @@ curl -i localhost:8000/answer/q04
 
 No key, no network: the answer replays a committed draft and reruns retrieval,
 the grounding check and the state machine against the committed index.
+
+That server enforces the committed allowance per client — 60 requests a minute,
+10 at once — so a loop over `/questions` fast enough to notice gets a 429 and a
+`Retry-After` rather than a slower answer.
 
 The eval needs no API key: the vectors are committed. Rebuilding the index does,
 and is one of exactly two steps that call an external service:
