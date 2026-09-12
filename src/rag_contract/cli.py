@@ -1,8 +1,10 @@
 """Command line entry point.
 
-Six commands, two of which touch the network:
+Eight commands, two of which touch the network:
 
     sections       inventory the parsed corpus; no network
+    index-status   whether the committed index still describes the corpus;
+                   no network
     build-index    embed chunks and questions, write the committed artefacts;
                    calls the embedding API
     record-drafts  ask an answer model for the claims behind each question and
@@ -44,11 +46,13 @@ from .gate import (
     THRESHOLDS_PATH,
     Check,
     failures,
+    freshness_check,
     load_thresholds,
     refusal_checks,
     run_gate,
 )
 from .index import INDEX_DIR, load_index, write_index
+from .lifecycle import index_status
 from .retrieval import search
 from .sections import parse_corpus
 
@@ -88,6 +92,23 @@ def cmd_sections(args: argparse.Namespace) -> int:
         f"{len({c.section_id for c in chunks})} sections with prose"
     )
     return 0
+
+
+def cmd_index_status(args: argparse.Namespace) -> int:
+    """Guarantee 4: does the committed index still describe the corpus?
+
+    Exits non-zero when it does not, so the same question the gate asks can be
+    asked directly, before a commit rather than after CI rejects it. Hashing
+    only: no network, no key.
+    """
+    status = index_status(load_index(args.index_dir))
+    if args.json:
+        print(json.dumps(status.to_dict(), indent=2))
+    else:
+        print(status.message)
+        for divergence in status.divergences:
+            print(f"  {divergence.line()}")
+    return 0 if status.fresh else 1
 
 
 def cmd_build_index(args: argparse.Namespace) -> int:
@@ -166,7 +187,11 @@ def cmd_gate(args: argparse.Namespace) -> int:
         top_k=args.top_k,
     )
 
-    checks = run_gate(report, thresholds) + refusal_checks(answers, thresholds)
+    checks = (
+        run_gate(report, thresholds)
+        + refusal_checks(answers, thresholds)
+        + [freshness_check(index_status(index))]
+    )
     if args.check_report:
         checks.append(_report_check(args.report, report))
         checks.append(_report_check(args.answers, answers, "eval-answers"))
@@ -340,6 +365,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sections.add_argument("--json", action="store_true", help="machine-readable counts")
     sections.set_defaults(func=cmd_sections)
+
+    status = subparsers.add_parser(
+        "index-status",
+        help="whether the committed index still describes the corpus on disk "
+        "(no network)",
+    )
+    status.add_argument("--index-dir", type=Path, default=INDEX_DIR)
+    status.add_argument("--json", action="store_true", help="the full status")
+    status.set_defaults(func=cmd_index_status)
 
     build = subparsers.add_parser(
         "build-index",

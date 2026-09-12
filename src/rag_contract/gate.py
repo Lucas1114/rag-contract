@@ -9,15 +9,17 @@ computes nothing itself and holds no numbers of its own: every floor is in the
 committed file, so lowering the bar is an edit someone has to make and a
 reviewer can see.
 
-Three kinds of check, and they are independent:
+Four kinds of check, and they are independent:
 
     aggregate     floors on recall@k and MRR over the answerable questions
     per-question  a rank ceiling for each answerable question
     refusal       guarantee 3, from the answer eval — floors on how often the
                   corpus's own questions are answered, a ceiling on how often
                   questions it cannot answer are
+    freshness     guarantee 4 — the committed index still describes the
+                  committed corpus. The only check here that holds no number
 
-All three exist because each alone is blind. Aggregates miss compensating
+The first three exist because each alone is blind. Aggregates miss compensating
 movement — one question improving while another collapses leaves recall@1 flat
 and MRR higher. Per-question ceilings miss uniform drift that stays inside every
 ceiling while every question gets worse. And both are silent about what the
@@ -27,6 +29,13 @@ refusal checks measure. A build passes only when all of them agree.
 One more check keeps the file honest: the set of gated questions must be exactly
 the set of answerable questions in the report. A question added to the question
 set without a recorded ceiling fails the gate rather than slipping in ungated.
+
+Freshness is the odd one out and is not in `eval/thresholds.yaml`, because
+there is no bar to set. Either the committed vectors were built from the corpus
+in this commit or they were not, and a project that could choose to tolerate
+"not" would be quoting eval numbers about a corpus it no longer has. It is the
+only part of guarantee 4 a machine can enforce: CI has no key, so it cannot
+rebuild an index — it can only refuse to pass a commit that needed one.
 """
 
 from __future__ import annotations
@@ -35,6 +44,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+
+from .lifecycle import IndexStatus
 
 THRESHOLDS_PATH = Path(__file__).resolve().parents[2] / "eval" / "thresholds.yaml"
 
@@ -253,6 +264,23 @@ def refusal_checks(answers: dict, thresholds: Thresholds) -> list[Check]:
             )
         )
     return checks
+
+
+def freshness_check(status: IndexStatus) -> Check:
+    """Guarantee 4: the committed index describes the committed corpus.
+
+    Holds no threshold. A corpus edit landing without the rebuilt vectors
+    turns the build red and the message names both what changed and the
+    version the rebuild will produce, because CI cannot run `build-index`
+    itself — that needs a key this workflow deliberately does not have.
+    """
+    return Check(
+        name="index freshness",
+        observed=status.version,
+        limit=status.expected_version,
+        passed=status.fresh,
+        detail="" if status.fresh else "; ".join(d.line() for d in status.divergences),
+    )
 
 
 def run_gate(report: dict, thresholds: Thresholds) -> list[Check]:

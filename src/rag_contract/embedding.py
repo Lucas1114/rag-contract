@@ -4,6 +4,12 @@ Embeddings are computed once, by `build-index`, and the vectors are committed.
 Nothing else — not the eval, not CI — calls this. Keeping the dependency in one
 module makes that claim checkable by import graph rather than asserted in prose.
 
+`httpx` is imported inside the function that uses it rather than at module
+scope, the way `drafter.py` does it. The model name and dimension count live
+here, and the index lifecycle has to read them to say whether the committed
+index still describes the corpus — so this module has to be importable from the
+gate, and importing it must not put an HTTP client in that graph.
+
 The build has to survive whatever rate limit the account it runs under happens
 to have, because the point of committing vectors is that anyone can rebuild
 them. Rather than hard-coding one tier's allowances, the client schedules
@@ -18,9 +24,12 @@ import sys
 import time
 from collections import deque
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import httpx
 import numpy as np
+
+if TYPE_CHECKING:  # pragma: no cover - annotations only
+    import httpx
 
 MODEL = "text-embedding-3-small"
 DIMENSIONS = 1536
@@ -176,6 +185,8 @@ def embed_texts(
     """
     if not texts:
         return np.zeros((0, dimensions), dtype=np.float32)
+
+    import httpx
 
     headers = {
         "Authorization": f"Bearer {_api_key()}",
