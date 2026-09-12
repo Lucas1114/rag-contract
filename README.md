@@ -29,7 +29,7 @@ data or CI results support it.
 |------|--------|
 | 1. Evaluation harness | verified |
 | 2. CI regression gate | verified |
-| 3. Failure behaviour | implemented |
+| 3. Failure behaviour | verified |
 | 4. Index lifecycle | specified |
 | 5. Budgets | specified |
 
@@ -99,7 +99,7 @@ No chunk spans a section, so every hit reports the section it came from.
     rag-contract eval           score against eval/questions.yaml      no network
     rag-contract eval-answers   score the failure behaviour            no network
     rag-contract answer         answer one question, showing its state no network
-    rag-contract gate           hold the eval to eval/thresholds.yaml  no network
+    rag-contract gate           hold both evals to eval/thresholds.yaml no network
 
 `eval` is deterministic numpy over committed vectors. Same index, same
 questions, same numbers, on any machine — which is the property the CI gate in
@@ -226,26 +226,78 @@ changing the coverage floor or the chunk parameters is *measured* by the answer
 eval rather than frozen out of it. Freezing the verdicts would produce an eval
 incapable of ever failing.
 
-### What gating this requires
+### Results
 
-Guarantee 3 has to be held from two sides, because either alone is trivially
-satisfiable. `answered_unanswerable` counts questions the corpus cannot answer
-that came back fully grounded — the outcome the guarantee exists to prevent, and
-a number that belongs pinned at zero. On its own it is worthless: a service that
-refuses every question scores a perfect zero on it. The rate at which the twenty
-answerable questions come back grounded is what makes the zero mean something.
+Drafted by `gpt-5.5-2026-04-23` over index `0fc1763d6701`. Full report in
+[`eval/results/answers.json`](eval/results/answers.json), drafts in
+[`eval/fixtures/drafts/`](eval/fixtures/drafts).
+
+| grounded (of 20 answerable) | state agreement (of 8 refusals) | answered anyway | claims withdrawn |
+|---|---|---|---|
+| 0.90 | 0.875 | 1 | 3 of 72 |
+
+The two answerable questions that are not fully grounded are `partial`, not
+broken: q10 writes "freshness-lifetime" where RFC 9111 writes it as two words,
+and two q14 claims sit at 0.64 and 0.667 against the 0.67 coverage floor. Both
+questions answer, each having said one hedge sentence less.
+
+Measuring falsified two of the eight state annotations. u03 and u07 were
+specified `partial` on footholds that turned out to answer adjacent questions
+rather than these — the corpus says which hosts receive a cookie, not how
+SameSite treats cross-site requests; it names a ClientHello without giving a
+handshake. Nothing was drafted against either, and both are now `unsupported`.
+Annotating the expectation before measuring is what made those corrections
+visible as corrections rather than as edits.
+
+### What this check does not do
+
+`answered_unanswerable` is 1, and the gate holds it at 1 rather than at 0.
+
+u01 asks how HTTP/2 multiplexes requests over one TCP connection. RFC 9110
+Section 1.2 says that HTTP/2 introduced a multiplexed session layer and never
+says how. The drafter returned exactly that sentence, cited correctly, and the
+response landed in `grounded`. Nothing was invented; every word is in the
+passage it names.
+
+What failed is not support but *responsiveness*. The user asked how, and got
+that it does. The grounding check verifies that a claim is supported by the
+passage it cites; it does not verify that the claim answers the question, and no
+deterministic lexical rule can — the two would need a judgement a word-overlap
+test cannot make, and making it with a second model would move the guarantee
+onto a dependency nothing in CI could check.
+
+So the number is held at the one case that is known, named and explained, and it
+may not grow: a second question reaching `grounded` fails the build whatever the
+cause. Pinning it at 0 was available and was refused, because it would have
+meant gating on a check that does not exist or relabelling u01 until the number
+came out right. This is the boundary of what this project verifies, and it is
+worth more stated than hidden behind a green zero.
+
+### Gating it from both sides
+
+Either side alone is passed by a broken service, and both directions are
+measured rather than argued.
+
+A ceiling on questions the corpus cannot answer is scored perfectly by a service
+that refuses everything: raising the coverage floor until all 28 questions land
+in `unsupported` scores **0** on `answered_unanswerable` — better than the real
+service — and is caught only by the floor on `grounded_rate`. A floor on the
+questions the corpus can answer is scored perfectly by a service that answers
+everything. `eval/thresholds.yaml` is rejected at load time if it sets one
+without the other.
 
 That is the same argument the regression gate makes about aggregate floors and
 per-question ceilings, arriving at the same shape from the other direction.
 
 ## Regression gate
 
-`eval/thresholds.yaml` is the committed bar. `rag-contract gate` reruns the eval
-and exits non-zero below it; CI runs that on every push and pull request. The
-gate holds no numbers of its own, so lowering the bar is an edit to that file
-and appears in the diff of the commit that does it.
+`eval/thresholds.yaml` is the committed bar. `rag-contract gate` reruns both
+evals and exits non-zero below it; CI runs that on every push and pull request.
+The gate holds no numbers of its own, so lowering the bar is an edit to that
+file and appears in the diff of the commit that does it.
 
-It applies two independent kinds of check.
+It applies three independent kinds of check — the two below, plus the refusal
+thresholds described under failure behaviour above.
 
 **Aggregate floors** on recall@1, recall@5, recall@10 and MRR. Each sits below
 the measured value with deliberate headroom: with 20 answerable questions one
@@ -271,10 +323,11 @@ Every answerable question must carry a ceiling and no others may. Adding a
 question without recording what it costs fails the gate, which forces the new
 question into the same diff as its bar.
 
-The eight unanswerable questions are deliberately not gated. Their score
-distribution overlaps the answerable one, as measured above, so a score band
-here would encode a boundary the data says does not exist. What gates refusal
-arrives with the grounding check in part 3.
+The eight unanswerable questions carry no rank ceiling and no score band. Their
+score distribution overlaps the answerable one, as measured above, so a band
+here would encode a boundary the data says does not exist. What holds them is
+the `refusal` block, whose numbers are outcomes of the grounding check rather
+than similarities.
 
 CI declares no secrets and reads none — there is nothing to authenticate
 against, because the vectors are committed and the eval is arithmetic. Two tests
@@ -284,10 +337,12 @@ the environment scrubbed. A third fails if `eval/results/retrieval.json` stops
 matching what the eval produces, so the numbers quoted in this README cannot
 drift from the commit they describe.
 
-The gate has been observed failing as well as passing: a branch that raised
+The gate has been observed failing as well as passing. A branch that raised
 recall@1's floor to 0.80 and q16's ceiling to 2 turned the build red on both
 checks, naming RFC 9110's definition of CONNECT as what outranks q16's expected
-section. A gate that has only ever been green is decoration.
+section. Tightening `max_answered_unanswerable` to 0 and `min_grounded_rate` to
+0.95 turns it red on both refusal checks, naming u01. A gate that has only ever
+been green is decoration.
 
 ## Running it
 
@@ -320,5 +375,15 @@ deterministic build artifact. Committing them means the retrieval eval runs in
 CI with no network calls, no cost, and reproducible results.
 
 **CI never calls a real LLM.** Retrieval evaluation is pure computation.
-Answer-level evaluation replays recorded responses. Live calls happen only in
-local runs, whose results are written to `eval/results/`.
+Answer-level evaluation replays the drafts committed under `eval/fixtures/`.
+Exactly two commands call an external service — `build-index` and
+`record-drafts` — both are run by hand, and both commit what they produce. One
+API key covers both.
+
+**A fixture freezes the model's output and nothing else.** Retrieval, the
+grounding check and the state machine rerun on every replay against the live
+index, so changing the coverage floor or the chunk parameters is measured by the
+answer eval rather than frozen out of it. This paid for itself immediately: the
+first recorded run scored 0.80 with 21 withdrawn claims, 20 of which were the
+check wrongly rejecting claims that named their own section in their prose.
+Fixing the check and re-measuring cost nothing.
