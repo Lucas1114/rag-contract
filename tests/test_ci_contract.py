@@ -18,6 +18,7 @@ from rag_contract.evaluate import evaluate
 from rag_contract.gate import freshness_check, load_thresholds, run_gate
 from rag_contract.index import load_index
 from rag_contract.lifecycle import index_status
+from rag_contract.spend import LEDGER_PATH
 
 NETWORK_MODULES = ("httpx", "requests", "urllib3", "openai", "anthropic")
 
@@ -32,10 +33,14 @@ NETWORK_MODULES = ("httpx", "requests", "urllib3", "openai", "anthropic")
 # its `import httpx` into the function was the alternative to duplicating the
 # model name somewhere safer, and it is the stronger outcome: the one module
 # that talks to an embedding API is now provably importable without one.
+# `spend` and `budget` join them for guarantee 5. `spend` is the module that
+# prices an API call and holds the cap that refuses one, so it is exactly the
+# kind of module that would reach for a client; it does arithmetic over
+# committed text and a local ledger instead, and this is where that stays true.
 GATE_IMPORT = (
     "from rag_contract import "
-    "answer_eval, answering, cli, drafter, embedding, evaluate, evalset, gate, "
-    "grounding, index, lifecycle, registry, retrieval, service"
+    "answer_eval, answering, budget, cli, drafter, embedding, evaluate, evalset, "
+    "gate, grounding, index, lifecycle, registry, retrieval, service, spend"
 )
 
 
@@ -86,3 +91,21 @@ def test_the_committed_index_clears_the_committed_thresholds():
     checks = run_gate(json.loads(RESULTS_PATH.read_text()), load_thresholds())
     failed = [c.name for c in checks if not c.passed]
     assert failed == []
+
+
+def test_the_gate_never_writes_to_the_spend_ledger():
+    """Guarantee 5's cost side is priced in CI, never spent.
+
+    The gate computes what a rebuild would cost from committed text. If it
+    could reach the `Cap` that records spend, the arithmetic and the ledger
+    would be one mistake apart.
+    """
+    before = LEDGER_PATH.read_bytes() if LEDGER_PATH.exists() else None
+    subprocess.run(
+        [sys.executable, "-m", "rag_contract.cli", "gate", "-q"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    after = LEDGER_PATH.read_bytes() if LEDGER_PATH.exists() else None
+    assert after == before

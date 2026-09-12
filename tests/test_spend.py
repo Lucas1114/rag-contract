@@ -26,6 +26,7 @@ from rag_contract.spend import (
     SpendCapExceeded,
     SpendError,
     completion_bound_usd,
+    embedding_usd,
     estimate_tokens,
     price_for,
     today,
@@ -302,3 +303,15 @@ def test_a_full_record_drafts_run_fits_inside_the_committed_cap():
     questions = 28
     worst_case = questions * completion_bound_usd("", MAX_TOKENS, "gpt-5.5")
     assert worst_case < limits.daily_cap_usd
+
+
+def test_the_priced_corpus_rebuild_sits_under_its_committed_ceiling():
+    from rag_contract.chunking import ChunkParams, chunk_sections
+    from rag_contract.corpus import load_documents
+    from rag_contract.embedding import MODEL
+    from rag_contract.evalset import load_questions
+    from rag_contract.sections import parse_corpus
+
+    chunks = chunk_sections(parse_corpus(load_documents()), ChunkParams())
+    texts = [c.embedding_text for c in chunks] + [q.question for q in load_questions()]
+    assert embedding_usd(texts, MODEL) <= load_thresholds().budget.max_build_index_usd

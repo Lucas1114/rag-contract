@@ -112,16 +112,16 @@ class DeadlineExceeded(RuntimeError):
 class BudgetLimits:
     """The committed numbers behind guarantee 5.
 
-    Latency and cost sit in one block because they are one guarantee, asking
-    one question — what a request, or a command, may spend before the behaviour
-    changes. The served request spends milliseconds and no money; the two
-    hand-run commands spend money and nobody's patience. Different units, same
-    rule.
+    Latency and cost sit in one block because they are one guarantee, and
+    because the two hand-run commands and the served request are the only two
+    places this project spends anything at all.
     """
 
     request_deadline_ms: float
     max_request_ms: float
     daily_cap_usd: float
+    max_build_index_usd: float
+    max_record_drafts_usd: float
 
     @classmethod
     def from_mapping(cls, raw: Mapping | None) -> BudgetLimits:
@@ -131,7 +131,13 @@ class BudgetLimits:
                 "it is not held: a ceiling that lives in code is a ceiling "
                 "nobody reviews when it moves."
             )
-        fields = ("request_deadline_ms", "max_request_ms", "daily_cap_usd")
+        fields = (
+            "request_deadline_ms",
+            "max_request_ms",
+            "daily_cap_usd",
+            "max_build_index_usd",
+            "max_record_drafts_usd",
+        )
         missing = [name for name in fields if name not in raw]
         if missing:
             raise BudgetError(f"the budget block leaves {', '.join(missing)} unset")
@@ -157,6 +163,16 @@ class BudgetLimits:
                 "gate's bar must be at most half the deadline, or a green build "
                 "says nothing about whether requests are about to be abandoned."
             )
+        # Both priced ceilings are ceilings on one command's run. A ceiling
+        # above the day's cap is a ceiling on something the cap would refuse
+        # to let happen.
+        for name in ("max_build_index_usd", "max_record_drafts_usd"):
+            if getattr(limits, name) > limits.daily_cap_usd:
+                raise BudgetError(
+                    f"{name} {getattr(limits, name)} exceeds daily_cap_usd "
+                    f"{limits.daily_cap_usd}. A command budgeted above the cap "
+                    "is a command the cap would never authorise."
+                )
         return limits
 
     def budget(self, clock: Clock = time.perf_counter) -> Budget:

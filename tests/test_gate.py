@@ -13,6 +13,7 @@ from rag_contract.budget import BudgetLimits
 from rag_contract.gate import (
     ThresholdError,
     Thresholds,
+    budget_checks,
     failures,
     load_thresholds,
     refusal_checks,
@@ -34,6 +35,8 @@ budget:
   request_deadline_ms: 150.0
   max_request_ms: 50.0
   daily_cap_usd: 2.00
+  max_build_index_usd: 0.02
+  max_record_drafts_usd: 1.00
 """
 
 REFUSAL = {
@@ -47,6 +50,8 @@ BUDGET = {
     "request_deadline_ms": 150.0,
     "max_request_ms": 50.0,
     "daily_cap_usd": 2.00,
+    "max_build_index_usd": 0.02,
+    "max_record_drafts_usd": 1.00,
 }
 
 
@@ -299,3 +304,101 @@ def test_the_committed_thresholds_carry_a_full_refusal_block():
         "min_state_agreement",
         "max_answered_unanswerable",
     }
+
+
+# --- Budget checks: guarantee 5 -------------------------------------------
+
+
+def budget(**overrides):
+    defaults = {
+        "slowest_question": "q14",
+        "slowest_ms": 7.4,
+        "build_index_usd": 0.0059,
+        "record_drafts_usd": 0.66,
+        "worst_case_record_usd": 1.80,
+        "thresholds": thresholds(),
+    }
+    return budget_checks(**{**defaults, **overrides})
+
+
+def test_a_service_inside_every_budget_produces_no_failures():
+    assert failures(budget()) == []
+
+
+def test_a_request_path_that_got_slow_fails_the_build():
+    """The regression this catches is the grounding check acquiring work.
+
+    Its input — how many claims the model returns — is the one thing on the
+    request path that the corpus does not bound.
+    """
+    failed = failures(budget(slowest_ms=60.0))
+    assert [c.name for c in failed] == ["slowest request"]
+
+
+def test_the_slow_check_names_the_question_and_the_deadline_it_is_under():
+    check = budget(slowest_ms=60.0)[0]
+    assert "q14" in check.detail
+    assert "150.0 ms" in check.detail
+
+
+def test_a_measurement_exactly_at_the_bar_passes():
+    assert budget(slowest_ms=50.0)[0].passed
+
+
+def test_a_corpus_that_outgrew_its_rebuild_budget_fails_the_build():
+    """Which puts the cost of adding a document in the diff that adds it."""
+    failed = failures(budget(build_index_usd=0.05))
+    assert [c.name for c in failed] == ["build-index cost"]
+
+
+def test_a_question_set_that_outgrew_its_recording_budget_fails_the_build():
+    failed = failures(budget(record_drafts_usd=1.20))
+    assert [c.name for c in failed] == ["record-drafts cost"]
+
+
+def test_an_output_ceiling_the_daily_cap_could_not_authorise_fails_the_build():
+    """The check that found something real.
+
+    `drafter.MAX_TOKENS` was 4000, putting a worst-case run at $3.90 against a
+    $2.00 cap. Nothing compared the two numbers until this check did, because
+    they live in different files and are set by different people.
+    """
+    failed = failures(budget(worst_case_record_usd=3.90))
+    assert [c.name for c in failed] == ["worst-case drafting"]
+    assert "abandon the run part way through" in failed[0].detail
+
+
+def test_the_four_budget_checks_are_independent():
+    """Each fails on its own, so a green build means all four agree."""
+    assert (
+        len(
+            failures(
+                budget(
+                    slowest_ms=60.0,
+                    build_index_usd=0.05,
+                    record_drafts_usd=1.20,
+                    worst_case_record_usd=3.90,
+                )
+            )
+        )
+        == 4
+    )
+
+
+def test_the_committed_thresholds_carry_a_full_budget_block():
+    limits = load_thresholds().budget
+    assert limits.max_request_ms <= limits.request_deadline_ms / 2
+    assert limits.max_record_drafts_usd <= limits.daily_cap_usd
+
+
+def test_a_budget_block_that_contradicts_itself_is_a_threshold_error(tmp_path):
+    """Anything wrong with the file reaches a caller as one kind of problem."""
+    with pytest.raises(ThresholdError, match="headroom"):
+        load_thresholds(
+            write(
+                tmp_path,
+                THRESHOLDS_YAML.replace(
+                    "max_request_ms: 50.0", "max_request_ms: 149.0"
+                ),
+            )
+        )

@@ -33,6 +33,8 @@ LIMITS = {
     "request_deadline_ms": 150.0,
     "max_request_ms": 50.0,
     "daily_cap_usd": 2.00,
+    "max_build_index_usd": 0.02,
+    "max_record_drafts_usd": 1.00,
 }
 
 
@@ -74,7 +76,7 @@ class TickingClock:
 def test_the_limits_load_from_a_well_formed_block():
     limits = BudgetLimits.from_mapping(LIMITS)
     assert limits.request_deadline_ms == 150.0
-    assert limits.max_request_ms == 50.0
+    assert limits.daily_cap_usd == 2.00
 
 
 @pytest.mark.parametrize("missing", sorted(LIMITS))
@@ -114,6 +116,13 @@ def test_a_bar_at_exactly_half_the_deadline_is_allowed():
         BudgetLimits.from_mapping({**LIMITS, "max_request_ms": 75.0}).max_request_ms
         == 75.0
     )
+
+
+@pytest.mark.parametrize("name", ["max_build_index_usd", "max_record_drafts_usd"])
+def test_a_command_budgeted_above_the_days_cap_is_refused(name):
+    """The cap would never authorise the run this ceiling permits."""
+    with pytest.raises(BudgetError, match=name):
+        BudgetLimits.from_mapping({**LIMITS, name: 2.50})
 
 
 # --- What a request spends ------------------------------------------------

@@ -14,8 +14,8 @@ Eight commands, two of which touch the network:
                    no network
     answer         answer one question from the committed fixtures, showing the
                    grounding check and the state it lands in; no network
-    gate           run both evals and hold them and the index freshness check
-                   to eval/thresholds.yaml; no network
+    gate           run both evals and hold them, the index freshness check and
+                   the budgets to eval/thresholds.yaml; no network
 
 The split is the point. `gate` is what CI runs, and everything under it is
 deterministic — committed vectors, committed drafts, no key, no network, no
@@ -37,6 +37,7 @@ from pathlib import Path
 
 from .answer_eval import evaluate_answers
 from .answering import decide, passages_from_hits
+from .budget import measure_request_ms
 from .chunking import ChunkParams, chunk_sections
 from .corpus import load_documents
 from .drafter import (
@@ -51,6 +52,7 @@ from .evaluate import TOP_K, evaluate
 from .gate import (
     THRESHOLDS_PATH,
     Check,
+    budget_checks,
     failures,
     freshness_check,
     load_thresholds,
@@ -59,9 +61,11 @@ from .gate import (
 )
 from .index import INDEX_DIR, load_index, write_index
 from .lifecycle import index_status
+from .registry import IndexRegistry
 from .retrieval import search
 from .sections import parse_corpus
-from .spend import Cap, Ledger, embedding_usd
+from .service import Service
+from .spend import Cap, Ledger, completion_bound_usd, embedding_usd
 
 RESULTS_PATH = (
     Path(__file__).resolve().parents[2] / "eval" / "results" / "retrieval.json"
@@ -213,6 +217,7 @@ def cmd_gate(args: argparse.Namespace) -> int:
         run_gate(report, thresholds)
         + refusal_checks(answers, thresholds)
         + [freshness_check(index_status(index))]
+        + _budget_checks(index, questions, thresholds, args)
     )
     if args.check_report:
         checks.append(_report_check(args.report, report))
@@ -228,6 +233,68 @@ def cmd_gate(args: argparse.Namespace) -> int:
         return 1
     print(f"\ngate passed: {len(checks)} checks at or above the committed bar")
     return 0
+
+
+def _budget_checks(index, questions, thresholds, args) -> list[Check]:
+    """Guarantee 5's numbers, computed here and compared in `gate.py`.
+
+    Two are arithmetic over committed artefacts and need no key: the corpus
+    prices an embedding rebuild, and the committed prompts and drafts price a
+    re-record from below. The third times the real served request path, because
+    there is no other way to know what it costs — and it is timed through
+    `Service` rather than through a hand-assembled pipeline so that what the
+    gate measures is what the HTTP surface actually runs.
+
+    The timed service is deliberately built without a budget. Timing a request
+    that is simultaneously being held to a deadline would make the measurement
+    able to fail for the thing it is measuring, and a gate check that can raise
+    instead of reporting a number is not a check.
+    """
+    from .drafter import MAX_TOKENS, SYSTEM, _prompt
+    from .drafter import MODEL as DRAFT_MODEL_NAME
+    from .embedding import MODEL as EMBED_MODEL
+
+    chunks = chunk_sections(parse_corpus(load_documents()), ChunkParams())
+    build_usd = embedding_usd(
+        [c.embedding_text for c in chunks] + [q.question for q in questions],
+        EMBED_MODEL,
+    )
+
+    drafter = FixtureDrafter.from_directory(args.fixtures_dir)
+    record_usd = 0.0
+    worst_case_usd = 0.0
+    for question in questions:
+        passages = passages_from_hits(
+            search(index, index.question_vector(question.id), k=args.top_k)
+        )
+        prompt = SYSTEM + _prompt(question.question, passages)
+        drafted = " ".join(c.text for c in drafter.draft(question.question, passages))
+        # The committed drafts hold the text the model returned and cannot hold
+        # the reasoning tokens it was also billed for, so this prices the
+        # recorded output as if it were the whole of it: a floor, and named as
+        # one wherever it is quoted.
+        record_usd += completion_bound_usd(prompt, 0, DRAFT_MODEL_NAME) + (
+            completion_bound_usd("", len(drafted) // 3, DRAFT_MODEL_NAME)
+        )
+        worst_case_usd += completion_bound_usd(prompt, MAX_TOKENS, DRAFT_MODEL_NAME)
+
+    service = Service(
+        registry=IndexRegistry(index),
+        questions={q.id: q for q in questions},
+        drafter=drafter,
+        top_k=args.top_k,
+    )
+    slowest, slowest_ms, _ = measure_request_ms(
+        service.answer, [q.id for q in questions]
+    )
+    return budget_checks(
+        slowest_question=slowest,
+        slowest_ms=slowest_ms,
+        build_index_usd=build_usd,
+        record_drafts_usd=record_usd,
+        worst_case_record_usd=worst_case_usd,
+        thresholds=thresholds,
+    )
 
 
 def _report_check(path: Path, report: dict, command: str = "eval") -> Check:

@@ -9,7 +9,7 @@ computes nothing itself and holds no numbers of its own: every floor is in the
 committed file, so lowering the bar is an edit someone has to make and a
 reviewer can see.
 
-Four kinds of check, and they are independent:
+Five kinds of check, and they are independent:
 
     aggregate     floors on recall@k and MRR over the answerable questions
     per-question  a rank ceiling for each answerable question
@@ -18,6 +18,8 @@ Four kinds of check, and they are independent:
                   questions it cannot answer are
     freshness     guarantee 4 — the committed index still describes the
                   committed corpus. The only check here that holds no number
+    budget        guarantee 5 — what a request spends against the deadline the
+                  service enforces, and what the two hand-run commands cost
 
 The first three exist because each alone is blind. Aggregates miss compensating
 movement — one question improving while another collapses leaves recall@1 flat
@@ -30,10 +32,14 @@ One more check keeps the file honest: the set of gated questions must be exactly
 the set of answerable questions in the report. A question added to the question
 set without a recorded ceiling fails the gate rather than slipping in ungated.
 
-`eval/thresholds.yaml` also carries guarantee 5's budget, which this module
-validates at load time and does not yet check anything against. The service
-reads it to know the deadline it serves under; the checks that hold it come
-next.
+The budget checks are the odd ones out in a different way: one of them is a
+measurement of this machine rather than of this commit. Everything else here is
+deterministic numpy over committed vectors and produces the same number
+anywhere, which is the property the whole project rests on. Wall-clock time does
+not, so its bar is sized for an order of magnitude rather than for a
+measurement — see `eval/thresholds.yaml`. The reason it is worth having anyway
+is that the failure it catches is an order-of-magnitude failure: the request
+path acquiring a cost that scales with something the service does not bound.
 
 Freshness is the odd one out and is not in `eval/thresholds.yaml`, because
 there is no bar to set. Either the committed vectors were built from the corpus
@@ -303,6 +309,86 @@ def freshness_check(status: IndexStatus) -> Check:
         passed=status.fresh,
         detail="" if status.fresh else "; ".join(d.line() for d in status.divergences),
     )
+
+
+def budget_checks(
+    *,
+    slowest_question: str,
+    slowest_ms: float,
+    build_index_usd: float,
+    record_drafts_usd: float,
+    worst_case_record_usd: float,
+    thresholds: Thresholds,
+) -> list[Check]:
+    """Guarantee 5, held by the same mechanism as 2, 3 and 4.
+
+    Every number is computed by the caller and compared here, which is the rule
+    the rest of this module follows: the gate holds no numbers of its own and
+    computes nothing, so lowering a bar is an edit to the committed file and
+    shows up in a diff.
+
+    Three things are being held, and they fail for three different reasons.
+
+    `slowest request` is the latency one, and the only non-deterministic check
+    in the gate. It fails when the request path has picked up a cost that is
+    large relative to the deadline the service enforces — which in practice
+    means the grounding check's per-claim work, the one input the corpus does
+    not bound.
+
+    The two `costs` are arithmetic over committed artefacts and need no key:
+    the corpus prices the embedding rebuild exactly, and the committed drafts
+    price a re-record from below. They fail when the corpus or the question set
+    has grown enough to change what reproducing this repository costs, which
+    puts that cost in the same diff as the thing that caused it.
+
+    `worst-case record-drafts` is the one that is not about growth at all. It
+    prices a run where every completion goes to the drafter's own output
+    ceiling, and holds it under the day's cap. The two numbers are set in
+    different files by different people for different reasons, and nothing else
+    here would notice them contradicting each other.
+    """
+    limits = thresholds.budget
+    return [
+        Check(
+            name="slowest request",
+            observed=round(slowest_ms, 3),
+            limit=limits.max_request_ms,
+            passed=slowest_ms <= limits.max_request_ms,
+            detail=f"{slowest_question}, against a "
+            f"{limits.request_deadline_ms} ms served deadline",
+        ),
+        Check(
+            name="build-index cost",
+            observed=round(build_index_usd, 4),
+            limit=limits.max_build_index_usd,
+            passed=build_index_usd <= limits.max_build_index_usd,
+            detail=""
+            if build_index_usd <= limits.max_build_index_usd
+            else ("embedding this corpus costs more than the committed ceiling"),
+        ),
+        Check(
+            name="record-drafts cost",
+            observed=round(record_drafts_usd, 4),
+            limit=limits.max_record_drafts_usd,
+            passed=record_drafts_usd <= limits.max_record_drafts_usd,
+            detail=""
+            if record_drafts_usd <= limits.max_record_drafts_usd
+            else ("re-recording the committed drafts costs more than the ceiling"),
+        ),
+        Check(
+            name="worst-case drafting",
+            observed=round(worst_case_record_usd, 4),
+            limit=limits.daily_cap_usd,
+            passed=worst_case_record_usd <= limits.daily_cap_usd,
+            detail=""
+            if worst_case_record_usd <= limits.daily_cap_usd
+            else (
+                "a record-drafts run where every completion reaches "
+                "drafter.MAX_TOKENS costs more than the day's cap allows, so "
+                "the cap would abandon the run part way through"
+            ),
+        ),
+    ]
 
 
 def run_gate(report: dict, thresholds: Thresholds) -> list[Check]:

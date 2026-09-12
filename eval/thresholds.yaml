@@ -136,7 +136,8 @@ refusal:
 # Latency and cost are one guarantee because they are one question: what a
 # request, or a command, is allowed to spend before the behaviour changes.
 # Everything here is a ceiling, and `budget.py` refuses the file outright when
-# these numbers contradict each other.
+# these numbers contradict each other — a gate bar with no headroom under the
+# served deadline, or a command budgeted above the day's cap.
 budget:
   # What the service enforces per request. Exceeding it abandons the request
   # with a 503 rather than answering: the deadline is checked inside the
@@ -177,3 +178,18 @@ budget:
   # For scale: one full record-drafts run was billed $0.57 on 2026-09-12, so the
   # cap is about three of them in a day.
   daily_cap_usd: 2.00
+
+  # Priced from committed artefacts, deterministically and with no key. The
+  # corpus is 293,131 estimated tokens at $0.02/1M, so a full rebuild is $0.0059
+  # and this ceiling is a little over three times it. It moves when the corpus
+  # does, which puts the cost of adding a document in the same diff as the
+  # document.
+  max_build_index_usd: 0.02
+
+  # The same idea for record-drafts, priced from the committed prompts and the
+  # committed drafts: $0.6609. That is a floor rather than an estimate — the
+  # fixtures hold the text the model returned and cannot hold the reasoning
+  # tokens it was also billed for — and the real invoice for that run was $0.57,
+  # lower because the token estimator over-estimates by about 1.44x. The ceiling
+  # has room for the question set to grow by roughly half before it has to move.
+  max_record_drafts_usd: 1.00
