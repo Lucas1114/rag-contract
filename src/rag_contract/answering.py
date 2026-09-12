@@ -165,7 +165,7 @@ class Answer:
             "question": self.question,
             "state": str(self.state),
             "http_status": self.state.http_status,
-            "index_version": self.index_version,
+            "index_version": self.index_version or None,
             "answer": self.text() or None,
             "message": self.message,
             "citations": self.citations,

@@ -31,6 +31,7 @@ def make_index(
     question_ids=(),
     question_vectors=None,
     questions_fingerprint="q" * 64,
+    version="0" * 12,
 ) -> Index:
     vectors = np.asarray(vectors, dtype=np.float32)
     if question_vectors is None:
@@ -38,7 +39,7 @@ def make_index(
     question_vectors = np.asarray(question_vectors, dtype=np.float32)
     chunks = [make_chunk(s, i) for i, s in enumerate(section_ids)]
     meta = IndexMeta(
-        version="0" * 12,
+        version=version,
         embedding_model="test",
         embedding_dimensions=vectors.shape[1],
         chunk_words=220,
