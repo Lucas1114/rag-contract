@@ -1,0 +1,54 @@
+# The regression gate — guarantee 2.
+#
+# This workflow declares no secrets and reads none. It cannot: the retrieval
+# eval is deterministic numpy over vectors committed to this repository, so
+# there is nothing here to authenticate against. That is the property the whole
+# evaluation story rests on — a reviewer can fork this repo and reproduce every
+# number in the README without an account anywhere.
+#
+# `gate` is the step that can fail the build on quality. Its bar lives in
+# eval/thresholds.yaml, so lowering it is a diff in the same pull request.
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.10"
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --frozen
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Tests
+        run: uv run pytest
+
+      # The gate reruns the eval rather than reading eval/results/, and
+      # --check-report then fails if the committed report no longer matches
+      # what this commit produces. The README quotes that file.
+      - name: Retrieval regression gate
+        run: uv run rag-contract gate --check-report

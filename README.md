@@ -28,7 +28,7 @@ data or CI results support it.
 | Part | Status |
 |------|--------|
 | 1. Evaluation harness | verified |
-| 2. CI regression gate | specified |
+| 2. CI regression gate | implemented |
 | 3. Failure behaviour | specified |
 | 4. Index lifecycle | specified |
 | 5. Budgets | specified |
@@ -89,13 +89,14 @@ The corpus parses into 600 numbered sections, 564 of which carry prose of their
 own, and chunks into 868 embedded units at 220 words with 40 words of overlap.
 No chunk spans a section, so every hit reports the section it came from.
 
-    rag-contract sections     inventory the parsed corpus        no network
-    rag-contract build-index  embed and write the index          calls the API once
-    rag-contract eval         score against eval/questions.yaml  no network
+    rag-contract sections     inventory the parsed corpus            no network
+    rag-contract build-index  embed and write the index              calls the API once
+    rag-contract eval         score against eval/questions.yaml      no network
+    rag-contract gate         hold the eval to eval/thresholds.yaml  no network
 
 `eval` is deterministic numpy over committed vectors. Same index, same
 questions, same numbers, on any machine — which is the property the CI gate in
-part 2 will be built on.
+part 2 is built on.
 
 ### Results
 
@@ -143,14 +144,63 @@ multiplexes requests; RFC 9110 Section 1.2 mentions that HTTP/2 introduced a
 multiplexed session layer without describing streams or frames, and it was
 annotated as a passage retrieval would surface anyway. It ranks first, at 0.548.
 
+## Regression gate
+
+`eval/thresholds.yaml` is the committed bar. `rag-contract gate` reruns the eval
+and exits non-zero below it; CI runs that on every push and pull request. The
+gate holds no numbers of its own, so lowering the bar is an edit to that file
+and appears in the diff of the commit that does it.
+
+It applies two independent kinds of check.
+
+**Aggregate floors** on recall@1, recall@5, recall@10 and MRR. Each sits below
+the measured value with deliberate headroom: with 20 answerable questions one
+question is worth 0.05 of a recall number, and a floor pinned to the measured
+value would fail on the first legitimate change to chunk size. The floors absorb
+two questions slipping; a third fails the build. recall@10 is the exception and
+is pinned at 1.00 — top 10 is the eval window, so anything below that is not a
+ranking regression but an annotated section going missing entirely.
+
+**A rank ceiling per question**, which fails the build on its own whatever the
+aggregate says. Aggregates hide compensating movement: if q16 improves from rank
+4 to 1 while q02 collapses from 1 to 8, recall@1 is unchanged and MRR goes *up*,
+and a question the corpus answers squarely has silently broken. Ceilings are the
+measured rank plus two, per question rather than global, because the questions
+are not equivalent — q16's rank 4 is a specific known confusion, and pinning it
+to 4 would gate on that confusion never shifting.
+
+The two are kept separate because either alone is blind. Aggregates miss one
+question collapsing; ceilings miss uniform drift that stays inside every ceiling
+while every question gets worse.
+
+Every answerable question must carry a ceiling and no others may. Adding a
+question without recording what it costs fails the gate, which forces the new
+question into the same diff as its bar.
+
+The eight unanswerable questions are deliberately not gated. Their score
+distribution overlaps the answerable one, as measured above, so a score band
+here would encode a boundary the data says does not exist. What gates refusal
+arrives with the grounding check in part 3.
+
+CI declares no secrets and reads none — there is nothing to authenticate
+against, because the vectors are committed and the eval is arithmetic. Two tests
+assert that rather than asserting it in prose: one checks that the gate's import
+graph reaches no HTTP client, and one runs the gate with every `*_API_KEY` in
+the environment scrubbed. A third fails if `eval/results/retrieval.json` stops
+matching what the eval produces, so the numbers quoted in this README cannot
+drift from the commit they describe.
+
 ## Running it
 
 Python 3.12, `uv` for dependencies, numpy for retrieval.
 
 ```
 uv sync
-uv run rag-contract eval --quiet
+uv run rag-contract gate
 ```
+
+That is what CI runs. `uv run rag-contract eval` prints the full JSON report
+behind it, and `--quiet` reduces it to one line.
 
 The eval needs no API key: the vectors are committed. Rebuilding the index does,
 and is the only step that calls an external service:
