@@ -19,7 +19,9 @@ Five kinds of check, and they are independent:
     freshness     guarantee 4 — the committed index still describes the
                   committed corpus. The only check here that holds no number
     budget        guarantee 5 — what a request spends against the deadline the
-                  service enforces, and what the two hand-run commands cost
+                  service enforces, what the two hand-run commands cost, and
+                  that the surface still refuses a client asking past its
+                  committed allowance
 
 The first three exist because each alone is blind. Aggregates miss compensating
 movement — one question improving while another collapses leaves recall@1 flat
@@ -389,6 +391,68 @@ def budget_checks(
             ),
         ),
     ]
+
+
+def rate_limit_check(
+    *, statuses: list[int], retry_after: str | None, thresholds: Thresholds
+) -> Check:
+    """Guarantee 5's third ceiling, held by behaviour rather than by a number.
+
+    The number is already held at load time — `BudgetLimits` refuses a file
+    whose allowance lets one client demand more than a quarter of a
+    process-minute — so a second comparison here would hold nothing new. What
+    is not held anywhere else is that the limiter is *installed*. A limiter
+    with correct arithmetic that no request passes through is the regression
+    this check exists to catch, and it is how rate limits die in practice:
+    nobody edits them to zero, they get lifted out of a middleware stack during
+    something else and no test notices because every test sends one request.
+
+    So the caller drives the real ASGI application, from one client, on a
+    frozen clock, exactly one request past the committed burst. The clock is
+    what makes a wall-clock control deterministic enough to gate on: nothing
+    refills, so the allowance is spent in a fixed number of requests and the
+    check produces the same number on any machine. That is the property every
+    other check here has and the latency check does not.
+
+    Shaped like `freshness_check` rather than like the budget checks above: it
+    holds no threshold of its own, because there is no bar to set. Either the
+    surface refuses past the committed allowance or it does not.
+    """
+    burst = thresholds.budget.max_client_burst
+    allowed = next(
+        (i for i, status in enumerate(statuses) if status == 429), len(statuses)
+    )
+    refused = allowed < len(statuses)
+
+    detail = ""
+    if not refused:
+        detail = (
+            f"{len(statuses)} requests from one client, none refused. The "
+            "committed allowance is not being enforced by the surface that "
+            "serves it"
+        )
+    elif allowed != burst:
+        detail = (
+            f"the surface refused after {allowed} requests, not the committed "
+            f"{burst}; the limiter is installed but is not the committed one"
+        )
+    elif not retry_after or not retry_after.isdigit() or int(retry_after) < 1:
+        detail = (
+            f"refused with Retry-After {retry_after!r}. A 429 that does not say "
+            "when to come back leaves the client to guess, and a guess is a "
+            "retry loop"
+        )
+    return Check(
+        name="rate limit",
+        observed=allowed,
+        limit=burst,
+        passed=not detail,
+        detail=detail
+        or (
+            f"request {allowed + 1} from one client refused 429, "
+            f"Retry-After {retry_after}s"
+        ),
+    )
 
 
 def run_gate(report: dict, thresholds: Thresholds) -> list[Check]:

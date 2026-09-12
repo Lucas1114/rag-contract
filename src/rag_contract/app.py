@@ -54,6 +54,7 @@ that owns the registry, and that is the whole audience for it.
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -219,6 +220,61 @@ def create_app(
         )
 
     return app
+
+
+def probe(
+    application, path: str, *, client_host: str, count: int
+) -> list[tuple[int, dict[str, str]]]:
+    """Send `count` GETs through an ASGI app from one client. No HTTP client.
+
+    This exists for the gate. The regression worth catching about a rate limit
+    is not that the arithmetic in `ratelimit.py` is wrong — the tests hold that
+    — but that a correct limiter stops being *installed*, which is how rate
+    limits actually die. Catching it means going through the surface rather
+    than asking the limiter directly.
+
+    It cannot use a test client to do that: `starlette.testclient` imports
+    httpx, and `tests/test_ci_contract.py` holds the gate's import graph clean
+    of every HTTP client so that CI is provably never one call away from a real
+    API. So this calls the ASGI application the way a server would, which is
+    all a test client does underneath.
+    """
+
+    async def send_one() -> tuple[int, dict[str, str]]:
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0", "spec_version": "2.3"},
+            "http_version": "1.1",
+            "method": "GET",
+            "scheme": "http",
+            "path": path,
+            "raw_path": path.encode(),
+            "query_string": b"",
+            "root_path": "",
+            "headers": [(b"host", b"gate")],
+            "client": (client_host, 50000),
+            "server": ("gate", 80),
+        }
+
+        async def receive() -> dict:
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        captured: dict = {}
+
+        async def send(message: dict) -> None:
+            if message["type"] == "http.response.start":
+                captured["status"] = message["status"]
+                captured["headers"] = {
+                    k.decode().lower(): v.decode() for k, v in message["headers"]
+                }
+
+        await application(scope, receive, send)
+        return captured.get("status", 0), captured.get("headers", {})
+
+    async def all_of_them() -> list[tuple[int, dict[str, str]]]:
+        return [await send_one() for _ in range(count)]
+
+    return asyncio.run(all_of_them())
 
 
 app = create_app()

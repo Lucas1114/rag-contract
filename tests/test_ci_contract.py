@@ -37,10 +37,18 @@ NETWORK_MODULES = ("httpx", "requests", "urllib3", "openai", "anthropic")
 # prices an API call and holds the cap that refuses one, so it is exactly the
 # kind of module that would reach for a client; it does arithmetic over
 # committed text and a local ledger instead, and this is where that stays true.
+#
+# `app` and `ratelimit` are here because guarantee 5's rate limit is held by a
+# gate check that drives the real ASGI application — the regression worth
+# catching is a correct limiter that is no longer installed, and only the
+# surface can show that. It is also why that check does not use a test client:
+# `starlette.testclient` imports httpx, and importing it from the gate's graph
+# would turn this test red. `app.probe` calls the application directly instead.
 GATE_IMPORT = (
     "from rag_contract import "
-    "answer_eval, answering, budget, cli, drafter, embedding, evaluate, evalset, "
-    "gate, grounding, index, lifecycle, registry, retrieval, service, spend"
+    "answer_eval, answering, app, budget, cli, drafter, embedding, evaluate, "
+    "evalset, gate, grounding, index, lifecycle, ratelimit, registry, retrieval, "
+    "service, spend"
 )
 
 

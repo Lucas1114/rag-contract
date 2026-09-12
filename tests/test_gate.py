@@ -7,8 +7,11 @@ collapsing while the aggregate covers for it, and a question entering the set
 without anyone recording what it costs.
 """
 
+import numpy as np
 import pytest
+from fastapi import FastAPI
 
+from rag_contract.app import create_app, probe
 from rag_contract.budget import BudgetLimits
 from rag_contract.gate import (
     ThresholdError,
@@ -16,9 +19,16 @@ from rag_contract.gate import (
     budget_checks,
     failures,
     load_thresholds,
+    rate_limit_check,
     refusal_checks,
     run_gate,
 )
+from rag_contract.registry import IndexRegistry
+from rag_contract.service import Service
+
+from .synthetic import make_index
+
+VECTORS = np.array([[1.0, 0.0]], dtype=np.float32)
 
 THRESHOLDS_YAML = """
 aggregate:
@@ -406,3 +416,109 @@ def test_a_budget_block_that_contradicts_itself_is_a_threshold_error(tmp_path):
                 ),
             )
         )
+
+
+# --- The rate limit check -------------------------------------------------
+#
+# It holds no threshold of its own, like the freshness check: there is no bar
+# to set, because either the surface refuses past the committed allowance or it
+# does not. What it is really guarding is that the limiter is still installed.
+
+
+def rate_limit(statuses, retry_after="1", budget=None):
+    return rate_limit_check(
+        statuses=statuses,
+        retry_after=retry_after,
+        thresholds=thresholds(budget=budget),
+    )
+
+
+def test_a_surface_that_refuses_at_the_committed_burst_passes():
+    check = rate_limit([200] * 10 + [429])
+    assert check.passed
+    assert "Retry-After 1s" in check.detail
+
+
+def test_a_surface_that_never_refuses_fails_the_build():
+    """The regression this check exists for: a correct limiter, not installed."""
+    check = rate_limit([200] * 11, retry_after=None)
+    assert not check.passed
+    assert "none refused" in check.detail
+
+
+def test_a_surface_that_refuses_at_the_wrong_count_fails_the_build():
+    """Installed, but not the limiter `eval/thresholds.yaml` describes."""
+    check = rate_limit([200] * 3 + [429])
+    assert not check.passed
+    assert "not the committed 10" in check.detail
+
+
+def test_a_429_without_a_retry_after_fails_the_build():
+    """A refusal that does not say when to come back is a retry loop."""
+    check = rate_limit([200] * 10 + [429], retry_after=None)
+    assert not check.passed
+    assert "when to come back" in check.detail
+
+
+def test_a_retry_after_of_zero_fails_the_build():
+    assert not rate_limit([200] * 10 + [429], retry_after="0").passed
+
+
+def test_the_committed_surface_refuses_a_client_past_its_allowance():
+    """End to end, through the real ASGI app, on a frozen clock.
+
+    This is the same path `rag-contract gate` takes, and it is deterministic
+    for the same reason: nothing refills, so the allowance is spent in a fixed
+    number of requests on any machine.
+    """
+    limits = load_thresholds()
+    app = create_app(
+        Service(
+            registry=IndexRegistry(make_index(["rfc9110#1"], VECTORS)),
+            questions={},
+            drafter=None,
+        ),
+        limiter=limits.budget.limiter(clock=lambda: 0.0),
+    )
+    results = probe(
+        app,
+        "/questions",
+        client_host="10.0.0.1",
+        count=limits.budget.max_client_burst + 1,
+    )
+    statuses = [status for status, _ in results]
+    refused = next(headers for status, headers in results if status == 429)
+    assert rate_limit_check(
+        statuses=statuses,
+        retry_after=refused.get("retry-after"),
+        thresholds=limits,
+    ).passed
+
+
+def test_the_check_goes_red_when_the_limiter_is_not_in_the_stack():
+    """Proved against the bug it exists to catch, not just against a passing run.
+
+    A `FastAPI` carrying the same route and no middleware is exactly what
+    lifting the limiter out during unrelated work would leave behind, and every
+    request through it succeeds.
+    """
+    unlimited = FastAPI()
+
+    @unlimited.get("/questions")
+    def questions() -> dict:
+        return {"questions": []}
+
+    limits = load_thresholds()
+    results = probe(
+        unlimited,
+        "/questions",
+        client_host="10.0.0.1",
+        count=limits.budget.max_client_burst + 1,
+    )
+    check = rate_limit_check(
+        statuses=[status for status, _ in results],
+        retry_after=None,
+        thresholds=limits,
+    )
+    assert not check.passed
+    assert "not being enforced" in check.detail

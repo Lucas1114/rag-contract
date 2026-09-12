@@ -14,8 +14,9 @@ Eight commands, two of which touch the network:
                    no network
     answer         answer one question from the committed fixtures, showing the
                    grounding check and the state it lands in; no network
-    gate           run both evals and hold them, the index freshness check and
-                   the budgets to eval/thresholds.yaml; no network
+    gate           run both evals and hold them, the index freshness check, the
+                   budgets and the served rate limit to eval/thresholds.yaml;
+                   no network
 
 The split is the point. `gate` is what CI runs, and everything under it is
 deterministic — committed vectors, committed drafts, no key, no network, no
@@ -56,6 +57,7 @@ from .gate import (
     failures,
     freshness_check,
     load_thresholds,
+    rate_limit_check,
     refusal_checks,
     run_gate,
 )
@@ -293,6 +295,40 @@ def _budget_checks(index, questions, thresholds, args) -> list[Check]:
         build_index_usd=build_usd,
         record_drafts_usd=record_usd,
         worst_case_record_usd=worst_case_usd,
+        thresholds=thresholds,
+    ) + [_rate_limit_check(service, thresholds)]
+
+
+def _rate_limit_check(service: Service, thresholds) -> Check:
+    """Guarantee 5's third ceiling, checked through the surface that holds it.
+
+    Composed here from the committed numbers and driven with a frozen clock:
+    nothing refills, so one client spends its whole burst and the next request
+    is refused, on any machine and in the same number of requests. The clock is
+    the only thing injected — the allowance comes from `eval/thresholds.yaml`,
+    because a check against a limiter the check configured would be a check on
+    nothing.
+
+    `/questions` rather than `/answer`, because the limiter runs before any
+    handler and the cheapest route proves the same thing while leaving the
+    latency measurement above unperturbed.
+    """
+    from .app import create_app, probe
+
+    application = create_app(
+        service, limiter=thresholds.budget.limiter(clock=lambda: 0.0)
+    )
+    results = probe(
+        application,
+        "/questions",
+        client_host="10.0.0.1",
+        count=thresholds.budget.max_client_burst + 1,
+    )
+    statuses = [status for status, _ in results]
+    refused = next((headers for status, headers in results if status == 429), {})
+    return rate_limit_check(
+        statuses=statuses,
+        retry_after=refused.get("retry-after"),
         thresholds=thresholds,
     )
 
