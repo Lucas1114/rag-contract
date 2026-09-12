@@ -49,10 +49,14 @@ jobs:
       # otherwise surface as a test failure and be attributed to the wrong
       # step. A regression should name the gate.
       #
-      # The gate reruns the eval rather than reading eval/results/, and
-      # --check-report then fails if the committed report no longer matches
-      # what this commit produces. The README quotes that file.
-      - name: Retrieval regression gate
+      # The gate reruns both evals rather than reading eval/results/, and
+      # --check-report then fails if either committed report no longer matches
+      # what this commit produces. The README quotes both files.
+      #
+      # Neither eval needs a key. Retrieval scores committed vectors; the
+      # answer eval replays the drafts committed under eval/fixtures/. The two
+      # commands that do call an API are run by hand and never from here.
+      - name: Quality gate
         run: uv run rag-contract gate --check-report
 
       - name: Tests
