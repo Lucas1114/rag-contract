@@ -1,14 +1,15 @@
 """Command line entry point.
 
-Three commands, one of which touches the network:
+Four commands, one of which touches the network:
 
     sections     inventory the parsed corpus; no network
     build-index  embed chunks and questions, write the committed artefacts;
                  the only command that calls the embedding API
     eval         score retrieval against eval/questions.yaml; no network
+    gate         run the eval and hold it to eval/thresholds.yaml; no network
 
-The split is the point. `eval` is what CI runs, and it is deterministic numpy
-over committed vectors.
+The split is the point. `gate` is what CI runs, and everything under it is
+deterministic numpy over committed vectors — no key, no network, no LLM.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from .chunking import ChunkParams, chunk_sections
 from .corpus import load_documents
 from .evalset import load_questions, questions_fingerprint
 from .evaluate import TOP_K, evaluate
+from .gate import THRESHOLDS_PATH, Check, failures, load_thresholds, run_gate
 from .index import INDEX_DIR, load_index, write_index
 from .sections import parse_corpus
 
@@ -119,6 +121,56 @@ def cmd_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_gate(args: argparse.Namespace) -> int:
+    """Guarantee 2: a quality regression fails the build.
+
+    The eval is always rerun here rather than read from `eval/results/`. A
+    committed report is an artefact of whenever it was last written; the gate
+    has to hold this commit's code against the committed thresholds, so it
+    scores the index in front of it.
+    """
+    thresholds = load_thresholds(args.thresholds)
+    index = load_index(args.index_dir)
+    report = evaluate(index, load_questions(), top_k=args.top_k)
+
+    checks = run_gate(report, thresholds)
+    if args.check_report:
+        checks.append(_report_check(args.report, report))
+    failed = failures(checks)
+
+    print(f"index {report['index_version']} against {args.thresholds.name}")
+    for check in checks if not args.quiet else failed:
+        print(check.line())
+
+    if failed:
+        print(f"\ngate failed: {len(failed)} of {len(checks)} checks below the bar")
+        return 1
+    print(f"\ngate passed: {len(checks)} checks at or above the committed bar")
+    return 0
+
+
+def _report_check(path: Path, report: dict) -> Check:
+    """The committed report must still describe what the eval produces.
+
+    Every retrieval number in the README is quoted from `eval/results/`. If
+    that file can drift from the code that produced it, the README is quoting
+    a number no commit ever measured.
+    """
+    if not path.exists():
+        detail = f"{path} does not exist"
+    elif path.read_text() != json.dumps(report, indent=2) + "\n":
+        detail = f"{path.name} is stale; rerun `rag-contract eval -o`"
+    else:
+        detail = ""
+    return Check(
+        name="committed report",
+        observed=None if detail else "current",
+        limit="current",
+        passed=not detail,
+        detail=detail,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rag-contract")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -154,6 +206,24 @@ def build_parser() -> argparse.ArgumentParser:
         "-q", "--quiet", action="store_true", help="print a one-line summary only"
     )
     evaluate_cmd.set_defaults(func=cmd_eval)
+
+    gate = subparsers.add_parser(
+        "gate",
+        help="run the eval and fail below eval/thresholds.yaml (no network)",
+    )
+    gate.add_argument("--index-dir", type=Path, default=INDEX_DIR)
+    gate.add_argument("--top-k", type=int, default=TOP_K)
+    gate.add_argument("--thresholds", type=Path, default=THRESHOLDS_PATH)
+    gate.add_argument("--report", type=Path, default=RESULTS_PATH)
+    gate.add_argument(
+        "--check-report",
+        action="store_true",
+        help="also fail when the committed report no longer matches this run",
+    )
+    gate.add_argument(
+        "-q", "--quiet", action="store_true", help="print failing checks only"
+    )
+    gate.set_defaults(func=cmd_gate)
     return parser
 
 

@@ -1,0 +1,88 @@
+# Retrieval regression gate — guarantee 2.
+#
+# These are floors, not expectations. `rag-contract gate` runs the eval and
+# fails the build when a number falls below its floor here. Raising a floor,
+# lowering one, or widening a rank ceiling is an edit to this file and shows up
+# in the diff of the commit that does it, which is the whole point: quality can
+# only be given away deliberately and in public.
+#
+# The eval is deterministic numpy over committed vectors, so nothing here moves
+# on its own between runs. What moves it is a change to the corpus, the chunk
+# parameters, the embedding model or the question set. The headroom below is
+# sized for those, not for run-to-run variance, which does not exist.
+
+measured:
+  # Where the floors came from. Provenance only — nothing enforces these.
+  index_version: "0fc1763d6701"
+  embedding_model: "text-embedding-3-small"
+  report: "eval/results/retrieval.json"
+  date: "2026-09-10"
+
+# Aggregate floors over the 20 answerable questions. One question moving is
+# worth 0.05 of a recall number, so a floor set one step below the measured
+# value would fail on a single question changing rank — too tight to survive a
+# legitimate chunk-parameter change, and the gate would be disabled within a
+# week. Two steps of slack on the headline metrics; none at all on recall@10.
+aggregate:
+  # measured 0.70. Two questions may fall out of rank 1. A third fails.
+  recall_at_1: 0.60
+  # measured 1.00. One question may fall out of the top 5. A second fails.
+  recall_at_5: 0.95
+  # measured 1.00, and this one is pinned. Top 10 is the eval window, so a
+  # value below 1.00 means an annotated section was not retrieved at all —
+  # not a ranking regression but a retrieval failure. Equivalent to
+  # metrics.misses being empty.
+  recall_at_10: 1.00
+  # measured 0.8292. Absorbs roughly two single-rank slips. MRR is here to
+  # catch broad, shallow degradation that leaves recall@1 intact: every
+  # question sliding from rank 1 to rank 2 costs 0.5 of MRR and nothing else.
+  mrr: 0.75
+
+# Per-question rank ceilings, independent of the aggregate.
+#
+# The aggregate hides compensating movement. If q16 improves from rank 4 to 1
+# while q02 collapses from 1 to 8, recall@1 is unchanged and MRR goes up, and a
+# question the corpus answers squarely has silently broken. So each answerable
+# question carries its own ceiling and any question exceeding it fails the
+# build on its own, whatever the aggregate says.
+#
+# Ceiling = the rank measured on index 0fc1763d6701, plus two. Slack is
+# per-question rather than global because the questions are not equivalent:
+# q16's rank 4 is a known confusion between RFC 9112's request-target forms and
+# RFC 9110's definition of CONNECT, and pinning it to 4 would gate on that
+# specific confusion never shifting.
+#
+# Every answerable question must appear here and no others may. Adding a
+# question to eval/questions.yaml without recording its ceiling fails the gate,
+# which forces the new question's cost into the same diff.
+max_rank:
+  q01: 3   # measured 1
+  q02: 3   # measured 1
+  q03: 3   # measured 1
+  q04: 3   # measured 1
+  q05: 4   # measured 2
+  q06: 3   # measured 1
+  q07: 5   # measured 3
+  q08: 3   # measured 1
+  q09: 4   # measured 2
+  q10: 3   # measured 1
+  q11: 3   # measured 1
+  q12: 3   # measured 1
+  q13: 3   # measured 1
+  q14: 3   # measured 1
+  q15: 3   # measured 1
+  q16: 6   # measured 4
+  q17: 4   # measured 2
+  q18: 4   # measured 2
+  q19: 3   # measured 1
+  q20: 3   # measured 1
+
+# The 8 unanswerable questions are deliberately not gated.
+#
+# P02 measured the thing a gate on them would need: the top-score distributions
+# of answerable and unanswerable questions overlap. q20 is answered correctly at
+# rank 1 scoring 0.592; u02 asks about HTTP/2 frame layout, absent from the
+# corpus entirely, and scores 0.604. No separation exists to gate on, so gating
+# a score band here would encode a boundary the data says is not there.
+# Refusal is guarantee 3's problem and rests on the grounding check, not on a
+# confidence number. What gates refusal belongs in this file when P04 builds it.
