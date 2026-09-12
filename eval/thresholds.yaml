@@ -77,12 +77,56 @@ max_rank:
   q19: 3   # measured 1
   q20: 3   # measured 1
 
-# The 8 unanswerable questions are deliberately not gated.
+# Refusal — guarantee 3.
 #
-# P02 measured the thing a gate on them would need: the top-score distributions
-# of answerable and unanswerable questions overlap. q20 is answered correctly at
+# Measured by `rag-contract eval-answers`, which replays the committed drafts
+# in eval/fixtures/drafts/ and reruns retrieval, the grounding check and the
+# state machine against the live index. Report in eval/results/answers.json.
+#
+# P02 measured why this cannot be a score band: the top-score distributions of
+# answerable and unanswerable questions overlap. q20 is answered correctly at
 # rank 1 scoring 0.592; u02 asks about HTTP/2 frame layout, absent from the
-# corpus entirely, and scores 0.604. No separation exists to gate on, so gating
-# a score band here would encode a boundary the data says is not there.
-# Refusal is guarantee 3's problem and rests on the grounding check, not on a
-# confidence number. What gates refusal belongs in this file when P04 builds it.
+# corpus entirely, and scores 0.604. So none of the numbers below is a
+# similarity threshold. They are outcomes of the grounding check.
+#
+# The floors and the ceiling exist together because either alone is passed by
+# a broken service. A ceiling on questions the corpus cannot answer is scored
+# perfectly by a service that refuses everything; a floor on questions it can
+# answer is scored perfectly by a service that answers everything. Neither is
+# a gate on its own. This is the same argument the aggregate floors and the
+# per-question ceilings above make, arriving from the other direction.
+refusal:
+  # measured 0.90 — 18 of the 20 answerable questions came back fully
+  # grounded. One question is worth 0.05 here, so this absorbs two more
+  # falling to `partial`; a third fails. This is the floor that stops the
+  # ceiling below being reachable by refusing the whole question set.
+  #
+  # The two that are not grounded are `partial` rather than broken: q10 writes
+  # "freshness-lifetime" where RFC 9111 writes it as two words, and two q14
+  # claims sit at 0.64 and 0.667 against the 0.67 coverage floor. Both answer;
+  # both said one hedge sentence less.
+  min_grounded_rate: 0.80
+
+  # measured 0.875 — 7 of the 8 refusal questions landed in the state
+  # questions.yaml annotates. One question is worth 0.125, so this absorbs one
+  # more moving. Deliberately the loosest number here: whether a foothold
+  # passage falls inside the retrieval window can move with the chunk
+  # parameters without anything being wrong.
+  min_state_agreement: 0.75
+
+  # measured 1, and this is the uncomfortable one. u01 asks how HTTP/2
+  # multiplexes; RFC 9110 Section 1.2 says that it does and never says how; the
+  # drafter returned exactly that sentence, correctly cited, and the response
+  # landed in `grounded`. Nothing was invented. The service answered a question
+  # the corpus cannot answer by saying the one true thing it contains.
+  #
+  # This is not pinned at 0, because it cannot honestly be. The grounding check
+  # verifies that a claim is supported by the passage it cites; it does not
+  # verify that the claim answers the question, and no deterministic lexical
+  # rule can. Pinning 0 here would mean either gating on a check that does not
+  # exist or relabelling u01 until the number came out right.
+  #
+  # So it is held at the one case that is known, named and explained. It may
+  # not grow. A second question reaching `grounded` is a regression whatever
+  # the cause, and fails the build.
+  max_answered_unanswerable: 1

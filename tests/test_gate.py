@@ -14,6 +14,7 @@ from rag_contract.gate import (
     Thresholds,
     failures,
     load_thresholds,
+    refusal_checks,
     run_gate,
 )
 
@@ -24,15 +25,37 @@ aggregate:
 max_rank:
   q01: 3
   q02: 3
+refusal:
+  min_grounded_rate: 0.80
+  min_state_agreement: 0.75
+  max_answered_unanswerable: 1
 """
 
+REFUSAL = {
+    "min_grounded_rate": 0.80,
+    "min_state_agreement": 0.75,
+    "max_answered_unanswerable": 1,
+}
 
-def thresholds(aggregate=None, max_rank=None):
+
+def thresholds(aggregate=None, max_rank=None, refusal=None):
     return Thresholds(
         aggregate=aggregate if aggregate is not None else {"recall_at_1": 0.6},
         max_rank=max_rank if max_rank is not None else {"q01": 3, "q02": 3},
         measured={},
+        refusal=refusal if refusal is not None else dict(REFUSAL),
     )
+
+
+def answer_report(grounded_rate=1.0, state_agreement=1.0, answered=()):
+    return {
+        "metrics": {
+            "grounded_rate": grounded_rate,
+            "state_agreement": state_agreement,
+            "answered_unanswerable": len(answered),
+            "answered_unanswerable_ids": list(answered),
+        }
+    }
 
 
 def report(ranks=(1, 1), recall_at_1=1.0, mrr=1.0, unanswerable=("u01",)):
@@ -159,3 +182,98 @@ def test_a_floor_on_an_unknown_metric_is_rejected_at_load(tmp_path):
 def test_a_nonsensical_rank_ceiling_is_rejected_at_load(tmp_path):
     with pytest.raises(ThresholdError, match="q02"):
         load_thresholds(write(tmp_path, THRESHOLDS_YAML.replace("q02: 3", "q02: 0")))
+
+
+# --- Refusal checks: guarantee 3 ------------------------------------------
+
+
+def test_a_healthy_answer_report_passes_every_refusal_check():
+    checks = refusal_checks(answer_report(), thresholds())
+    assert [c.passed for c in checks] == [True, True, True]
+
+
+def test_a_service_that_refuses_everything_fails_the_floor():
+    # The reason the ceiling alone is not a gate. Refusing every question
+    # scores a perfect zero on answered_unanswerable.
+    checks = refusal_checks(answer_report(grounded_rate=0.0, answered=()), thresholds())
+    failed = {c.name for c in checks if not c.passed}
+    assert failed == {"grounded_rate"}
+
+
+def test_a_service_that_answers_everything_fails_the_ceiling():
+    # And the mirror: the floor alone is not a gate either.
+    checks = refusal_checks(
+        answer_report(grounded_rate=1.0, answered=("u01", "u02", "u03")),
+        thresholds(),
+    )
+    failed = {c.name for c in checks if not c.passed}
+    assert failed == {"answered_unanswerable"}
+
+
+def test_the_ceiling_names_the_questions_that_broke_it():
+    checks = refusal_checks(answer_report(answered=("u01", "u05")), thresholds())
+    breach = next(c for c in checks if c.name == "answered_unanswerable")
+    assert "u01, u05" in breach.detail
+
+
+def test_the_known_shortfall_is_held_at_one_and_may_not_grow():
+    # u01 reaches `grounded` without inventing anything; the check verifies
+    # support, not responsiveness. One is tolerated and named. Two is not.
+    assert all(
+        c.passed for c in refusal_checks(answer_report(answered=("u01",)), thresholds())
+    )
+    failed = [
+        c
+        for c in refusal_checks(answer_report(answered=("u01", "u02")), thresholds())
+        if not c.passed
+    ]
+    assert [c.name for c in failed] == ["answered_unanswerable"]
+
+
+def test_state_agreement_has_its_own_floor():
+    checks = refusal_checks(answer_report(state_agreement=0.5), thresholds())
+    failed = {c.name for c in checks if not c.passed}
+    assert failed == {"state_agreement"}
+
+
+def test_a_metric_exactly_at_its_refusal_bar_passes():
+    checks = refusal_checks(
+        answer_report(grounded_rate=0.80, state_agreement=0.75, answered=("u01",)),
+        thresholds(),
+    )
+    assert all(c.passed for c in checks)
+
+
+def test_a_refusal_threshold_on_an_unreported_metric_is_an_error():
+    with pytest.raises(ThresholdError, match="did not produce"):
+        refusal_checks({"metrics": {}}, thresholds())
+
+
+def test_a_threshold_file_with_no_refusal_block_is_rejected(tmp_path):
+    path = tmp_path / "thresholds.yaml"
+    path.write_text(THRESHOLDS_YAML.split("refusal:")[0])
+    with pytest.raises(ThresholdError, match="no refusal thresholds"):
+        load_thresholds(path)
+
+
+def test_a_half_set_refusal_block_is_rejected(tmp_path):
+    # Guarantee 3 is held from both sides or not at all.
+    path = tmp_path / "thresholds.yaml"
+    path.write_text(THRESHOLDS_YAML.replace("  min_grounded_rate: 0.80\n", ""))
+    with pytest.raises(ThresholdError, match="both sides"):
+        load_thresholds(path)
+
+
+def test_an_unknown_refusal_threshold_is_rejected(tmp_path):
+    path = tmp_path / "thresholds.yaml"
+    path.write_text(THRESHOLDS_YAML + "  min_vibes: 0.9\n")
+    with pytest.raises(ThresholdError, match="does not report"):
+        load_thresholds(path)
+
+
+def test_the_committed_thresholds_carry_a_full_refusal_block():
+    assert set(load_thresholds().refusal) == {
+        "min_grounded_rate",
+        "min_state_agreement",
+        "max_answered_unanswerable",
+    }

@@ -9,18 +9,22 @@ computes nothing itself and holds no numbers of its own: every floor is in the
 committed file, so lowering the bar is an edit someone has to make and a
 reviewer can see.
 
-Two kinds of check, and they are independent:
+Three kinds of check, and they are independent:
 
-    aggregate   floors on recall@k and MRR over the answerable questions
+    aggregate     floors on recall@k and MRR over the answerable questions
     per-question  a rank ceiling for each answerable question
+    refusal       guarantee 3, from the answer eval — floors on how often the
+                  corpus's own questions are answered, a ceiling on how often
+                  questions it cannot answer are
 
-Both exist because either alone is blind. Aggregates miss compensating
+All three exist because each alone is blind. Aggregates miss compensating
 movement — one question improving while another collapses leaves recall@1 flat
-and MRR higher. Per-question ceilings miss uniform drift that stays inside
-every ceiling while every question gets worse. A build passes only when both
-agree.
+and MRR higher. Per-question ceilings miss uniform drift that stays inside every
+ceiling while every question gets worse. And both are silent about what the
+service does once retrieval has handed it the right passage, which is what the
+refusal checks measure. A build passes only when all of them agree.
 
-A third check keeps the file honest: the set of gated questions must be exactly
+One more check keeps the file honest: the set of gated questions must be exactly
 the set of answerable questions in the report. A question added to the question
 set without a recorded ceiling fails the gate rather than slipping in ungated.
 """
@@ -36,6 +40,16 @@ THRESHOLDS_PATH = Path(__file__).resolve().parents[2] / "eval" / "thresholds.yam
 
 AGGREGATE_METRICS = ("recall_at_1", "recall_at_5", "recall_at_10", "mrr")
 
+# Guarantee 3. `min_` names a floor and `max_` a ceiling, and both kinds are
+# needed: a ceiling on questions the corpus cannot answer is scored perfectly
+# by a service that refuses everything, and a floor on the ones it can answer
+# is scored perfectly by a service that answers everything.
+REFUSAL_METRICS = {
+    "min_grounded_rate": "grounded_rate",
+    "min_state_agreement": "state_agreement",
+    "max_answered_unanswerable": "answered_unanswerable",
+}
+
 
 class ThresholdError(RuntimeError):
     """The threshold file is missing, malformed, or not about this report."""
@@ -46,6 +60,7 @@ class Thresholds:
     aggregate: dict[str, float]
     max_rank: dict[str, int]
     measured: dict
+    refusal: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -89,10 +104,28 @@ def load_thresholds(path: Path = THRESHOLDS_PATH) -> Thresholds:
         if not isinstance(ceiling, int) or ceiling < 1:
             raise ThresholdError(f"{path}: {qid} has a non-positive rank ceiling")
 
+    refusal = raw.get("refusal") or {}
+    if not refusal:
+        raise ThresholdError(f"{path} sets no refusal thresholds")
+    unknown = set(refusal) - set(REFUSAL_METRICS)
+    if unknown:
+        raise ThresholdError(
+            f"{path} sets refusal thresholds the answer eval does not report: "
+            f"{', '.join(sorted(unknown))}"
+        )
+    missing = set(REFUSAL_METRICS) - set(refusal)
+    if missing:
+        raise ThresholdError(
+            f"{path} leaves {', '.join(sorted(missing))} unset. Guarantee 3 is "
+            "held from both sides or not at all: a ceiling alone is passed by a "
+            "service that refuses everything."
+        )
+
     return Thresholds(
         aggregate={k: float(v) for k, v in aggregate.items()},
         max_rank={str(k): int(v) for k, v in max_rank.items()},
         measured=raw.get("measured") or {},
+        refusal={k: float(v) for k, v in refusal.items()},
     )
 
 
@@ -175,6 +208,46 @@ def _rank_checks(report: dict, thresholds: Thresholds) -> list[Check]:
                 name=f"rank {result['id']}",
                 observed=rank,
                 limit=ceiling,
+                passed=passed,
+                detail=detail,
+            )
+        )
+    return checks
+
+
+def refusal_checks(answers: dict, thresholds: Thresholds) -> list[Check]:
+    """Guarantee 3, held from both sides.
+
+    Takes the answer eval's report rather than the retrieval one. `min_` names
+    a floor and `max_` a ceiling; the prefix is the whole rule, so adding a
+    threshold needs no change here beyond naming it in REFUSAL_METRICS.
+    """
+    metrics = answers["metrics"]
+    checks = []
+    for name, metric in REFUSAL_METRICS.items():
+        if metric not in metrics:
+            raise ThresholdError(
+                f"the answer report does not carry {metric}; the gate cannot "
+                "hold a threshold on a metric the eval did not produce"
+            )
+        observed = metrics[metric]
+        limit = thresholds.refusal[name]
+        if name.startswith("min_"):
+            passed = observed >= limit
+            detail = "" if passed else "below floor"
+        else:
+            passed = observed <= limit
+            detail = "" if passed else "above ceiling"
+        if not passed and metric == "answered_unanswerable":
+            detail = (
+                f"{', '.join(metrics['answered_unanswerable_ids'])} answered "
+                "despite the corpus not answering them"
+            )
+        checks.append(
+            Check(
+                name=metric,
+                observed=observed,
+                limit=limit,
                 passed=passed,
                 detail=detail,
             )

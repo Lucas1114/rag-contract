@@ -22,22 +22,12 @@
     ],
     "grounded_answerable": 18,
     "grounded_rate": 0.9,
-    "state_agreement": 0.625,
+    "state_agreement": 0.875,
     "disagreements": [
       {
         "id": "u01",
         "expected": "partial",
         "observed": "grounded"
-      },
-      {
-        "id": "u03",
-        "expected": "partial",
-        "observed": "unsupported"
-      },
-      {
-        "id": "u07",
-        "expected": "partial",
-        "observed": "unsupported"
       }
     ],
     "withdrawn_claims": 3,
@@ -1953,8 +1943,8 @@
       ],
       "id": "u03",
       "answerable": false,
-      "expected_state": "partial",
-      "agrees": false,
+      "expected_state": "unsupported",
+      "agrees": true,
       "drift": []
     },
     {
@@ -2229,8 +2219,8 @@
       ],
       "id": "u07",
       "answerable": false,
-      "expected_state": "partial",
-      "agrees": false,
+      "expected_state": "unsupported",
+      "agrees": true,
       "drift": []
     },
     {

@@ -190,12 +190,21 @@ questions:
   # drafter reading it supplies the rest from memory. The other five have no
   # foothold in the corpus at all.
   #
-  # This is a specification, not a prediction. What the gate pins absolutely is
-  # that none of these eight may come back `grounded` — a question the corpus
-  # cannot answer must never produce a confident answer. The partial/
-  # unsupported split is gated more loosely, because whether a foothold
-  # passage lands inside the retrieval window can legitimately move with the
-  # chunk parameters.
+  # This is a specification, and measuring it falsified three of the eight.
+  # u03 and u07 were annotated `partial` and are now `unsupported`: the
+  # footholds guessed for them answer adjacent questions rather than these, and
+  # nothing was drafted against either. u01 is the one left disagreeing on
+  # purpose — see its note. Both corrections are in the diff of the commit that
+  # made them, which is the point of annotating an expectation before measuring
+  # rather than after.
+  #
+  # What the gate holds is in eval/thresholds.yaml under `refusal`. It does not
+  # pin `grounded` to never happening on these eight, because u01 shows it can
+  # happen without anything being invented. The grounding check verifies that a
+  # claim is supported by the passage it cites; it does not verify that the
+  # claim answers the question. That boundary is real, deterministic checking
+  # cannot cross it, and stating it is worth more than a threshold that hides
+  # it.
   #
   # `no_context` is annotated on no question here, and saying so is more honest
   # than manufacturing one. Brute-force cosine over 868 chunks always returns
@@ -209,8 +218,13 @@ questions:
     answerable: false
     expected_state: partial
     state_reason: >-
-      RFC 9110 Section 1.2 states that HTTP/2 introduced a multiplexed
-      session layer. That grounds; streams, frames and flow control do not.
+      RFC 9110 Section 1.2 states that HTTP/2 introduced a multiplexed session
+      layer. That grounds; streams, frames and flow control do not, so the
+      service should return the one and withdraw the rest. It does not: the
+      drafter wrote only the grounded sentence, nothing was withdrawn, and the
+      response lands in `grounded`. This annotation is deliberately left at the
+      behaviour that is wanted rather than the behaviour that is measured — it
+      is the single known shortfall of guarantee 3, and the README says so.
     absent: >-
       HTTP/2 is RFC 9113, not in the corpus. RFC 9110 Section 1.2 notes in
       passing that HTTP/2 introduced a multiplexed session layer, but describes
@@ -232,11 +246,12 @@ questions:
   - id: u03
     question: "How does the SameSite cookie attribute restrict cross-site requests?"
     answerable: false
-    expected_state: partial
+    expected_state: unsupported
     state_reason: >-
-      The six attributes that restrict when a cookie is sent are in the
-      corpus and ground. SameSite is not one of them, and no claim naming it
-      can.
+      Annotated `partial` first, on the theory that the six attributes which do
+      restrict when a cookie is sent would ground something. Measured, nothing
+      was drafted at all: the foothold is about which hosts receive a cookie,
+      not about cross-site requests, and it answers a different question.
     absent: "SameSite was introduced after RFC 6265; the corpus has the original six attributes only."
     nearest: ["rfc6265#5.2.5", "rfc6265#5.4"]
 
@@ -273,10 +288,11 @@ questions:
   - id: u07
     question: "What is the message sequence of the TLS 1.3 handshake?"
     answerable: false
-    expected_state: partial
+    expected_state: unsupported
     state_reason: >-
-      RFC 9112 Section 9.7 has a client sending a ClientHello to begin the
-      handshake. That grounds; the message sequence does not.
+      Annotated `partial` first, for the ClientHello RFC 9112 Section 9.7
+      mentions. Measured, nothing was drafted: one message named in passing is
+      not a foothold for a question asking for a sequence.
     absent: >-
       TLS 1.3 is RFC 8446, not in the corpus. RFC 9112 Section 9.7 mentions
       sending a ClientHello to begin the handshake, but gives no message

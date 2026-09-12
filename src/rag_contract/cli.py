@@ -40,7 +40,14 @@ from .drafter import (
 from .drafter import MODEL as DRAFT_MODEL
 from .evalset import load_questions, questions_fingerprint
 from .evaluate import TOP_K, evaluate
-from .gate import THRESHOLDS_PATH, Check, failures, load_thresholds, run_gate
+from .gate import (
+    THRESHOLDS_PATH,
+    Check,
+    failures,
+    load_thresholds,
+    refusal_checks,
+    run_gate,
+)
 from .index import INDEX_DIR, load_index, write_index
 from .retrieval import search
 from .sections import parse_corpus
@@ -150,11 +157,19 @@ def cmd_gate(args: argparse.Namespace) -> int:
     """
     thresholds = load_thresholds(args.thresholds)
     index = load_index(args.index_dir)
-    report = evaluate(index, load_questions(), top_k=args.top_k)
+    questions = load_questions()
+    report = evaluate(index, questions, top_k=args.top_k)
+    answers = evaluate_answers(
+        index,
+        questions,
+        FixtureDrafter.from_directory(args.fixtures_dir),
+        top_k=args.top_k,
+    )
 
-    checks = run_gate(report, thresholds)
+    checks = run_gate(report, thresholds) + refusal_checks(answers, thresholds)
     if args.check_report:
         checks.append(_report_check(args.report, report))
+        checks.append(_report_check(args.answers, answers, "eval-answers"))
     failed = failures(checks)
 
     print(f"index {report['index_version']} against {args.thresholds.name}")
@@ -168,21 +183,21 @@ def cmd_gate(args: argparse.Namespace) -> int:
     return 0
 
 
-def _report_check(path: Path, report: dict) -> Check:
+def _report_check(path: Path, report: dict, command: str = "eval") -> Check:
     """The committed report must still describe what the eval produces.
 
-    Every retrieval number in the README is quoted from `eval/results/`. If
-    that file can drift from the code that produced it, the README is quoting
-    a number no commit ever measured.
+    Every number in the README is quoted from `eval/results/`. If those files
+    can drift from the code that produced them, the README is quoting numbers
+    no commit ever measured.
     """
     if not path.exists():
         detail = f"{path} does not exist"
     elif path.read_text() != json.dumps(report, indent=2) + "\n":
-        detail = f"{path.name} is stale; rerun `rag-contract eval -o`"
+        detail = f"{path.name} is stale; rerun `rag-contract {command} -o`"
     else:
         detail = ""
     return Check(
-        name="committed report",
+        name=f"committed {path.stem}",
         observed=None if detail else "current",
         limit="current",
         passed=not detail,
@@ -406,6 +421,8 @@ def build_parser() -> argparse.ArgumentParser:
     gate.add_argument("--top-k", type=int, default=TOP_K)
     gate.add_argument("--thresholds", type=Path, default=THRESHOLDS_PATH)
     gate.add_argument("--report", type=Path, default=RESULTS_PATH)
+    gate.add_argument("--answers", type=Path, default=ANSWERS_PATH)
+    gate.add_argument("--fixtures-dir", type=Path, default=FIXTURES_DIR)
     gate.add_argument(
         "--check-report",
         action="store_true",
