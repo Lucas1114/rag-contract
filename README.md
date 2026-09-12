@@ -28,7 +28,7 @@ data or CI results support it.
 | Part | Status |
 |------|--------|
 | 1. Evaluation harness | verified |
-| 2. CI regression gate | implemented |
+| 2. CI regression gate | verified |
 | 3. Failure behaviour | specified |
 | 4. Index lifecycle | specified |
 | 5. Budgets | specified |
@@ -189,6 +189,11 @@ graph reaches no HTTP client, and one runs the gate with every `*_API_KEY` in
 the environment scrubbed. A third fails if `eval/results/retrieval.json` stops
 matching what the eval produces, so the numbers quoted in this README cannot
 drift from the commit they describe.
+
+The gate has been observed failing as well as passing: a branch that raised
+recall@1's floor to 0.80 and q16's ceiling to 2 turned the build red on both
+checks, naming RFC 9110's definition of CONNECT as what outranks q16's expected
+section. A gate that has only ever been green is decoration.
 
 ## Running it
 

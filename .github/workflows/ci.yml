@@ -29,9 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v6
         with:
           version: "0.12.10"
           enable-cache: true
@@ -44,11 +44,16 @@ jobs:
           uv run ruff check .
           uv run ruff format --check .
 
-      - name: Tests
-        run: uv run pytest
-
+      # Ahead of the tests deliberately. Two tests in tests/test_ci_contract.py
+      # exercise the same committed thresholds, so a quality regression would
+      # otherwise surface as a test failure and be attributed to the wrong
+      # step. A regression should name the gate.
+      #
       # The gate reruns the eval rather than reading eval/results/, and
       # --check-report then fails if the committed report no longer matches
       # what this commit produces. The README quotes that file.
       - name: Retrieval regression gate
         run: uv run rag-contract gate --check-report
+
+      - name: Tests
+        run: uv run pytest
