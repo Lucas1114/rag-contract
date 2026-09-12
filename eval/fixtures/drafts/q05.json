@@ -3,6 +3,7 @@
   "question": "Which status code means the server knows the request method but the target resource does not support it, and what must that response include?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:49:02Z",
   "passages": [
     "rfc9110#15.6.2",

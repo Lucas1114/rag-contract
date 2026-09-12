@@ -3,6 +3,7 @@
   "question": "How is the end of a chunked message body signalled?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:49:55Z",
   "passages": [
     "rfc9112#7.1",

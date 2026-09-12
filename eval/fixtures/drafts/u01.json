@@ -3,6 +3,7 @@
   "question": "How does HTTP/2 multiplex multiple requests over a single TCP connection?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:50:09Z",
   "passages": [
     "rfc9110#1.2",

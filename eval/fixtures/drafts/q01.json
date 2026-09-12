@@ -3,6 +3,7 @@
   "question": "Which characters make up the unreserved set in a URI?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:48:53Z",
   "passages": [
     "rfc3986#2.3",

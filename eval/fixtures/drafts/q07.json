@@ -3,6 +3,7 @@
   "question": "What does a Vary header field on a response tell a cache?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:49:14Z",
   "passages": [
     "rfc9111#4.1",

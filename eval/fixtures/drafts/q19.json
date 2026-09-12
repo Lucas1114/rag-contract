@@ -3,6 +3,7 @@
   "question": "What minimum size per cookie should a user agent support?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:50:03Z",
   "passages": [
     "rfc6265#6.1",

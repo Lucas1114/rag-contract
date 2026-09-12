@@ -3,6 +3,7 @@
   "question": "How does a recipient determine the length of a message body in an HTTP/1.1 message?",
   "model": "gpt-5.5-2026-04-23",
   "index_version": "0fc1763d6701",
+  "system_fingerprint": "8e66c8af7b03",
   "recorded_at": "2026-09-12T13:49:52Z",
   "passages": [
     "rfc9112#6.3",

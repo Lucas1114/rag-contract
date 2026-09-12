@@ -17,6 +17,7 @@ from rag_contract.drafter import (
     Recording,
     load_recordings,
     record,
+    system_fingerprint,
     write_recording,
 )
 from rag_contract.grounding import Claim
@@ -35,12 +36,18 @@ def passage(section_id: str, rank: int = 1) -> Passage:
     )
 
 
-def recording(question: str = QUESTION, claims=None, passages=("rfc9110#9.2.1",)):
+def recording(
+    question: str = QUESTION,
+    claims=None,
+    passages=("rfc9110#9.2.1",),
+    prompt=None,
+):
     return Recording(
         question_id="q04",
         question=question,
         model="claude-opus-5",
         index_version="0fc1763d6701",
+        system_fingerprint=prompt or system_fingerprint(),
         recorded_at="2026-09-12T00:00:00Z",
         passages=tuple(passages),
         claims=tuple(CLAIMS if claims is None else claims),
@@ -63,6 +70,21 @@ class TestRecordingFormat:
             model="claude-opus-5",
         )
         assert made.passages == ("rfc9110#9.2.1", "rfc9110#9.2.2")
+
+    def test_it_records_the_prompt_the_claims_were_drafted_under(self):
+        made = record(
+            question_id="q04",
+            question=QUESTION,
+            passages=[passage("rfc9110#9.2.1")],
+            claims=CLAIMS,
+            index_version="0fc1763d6701",
+            model="claude-opus-5",
+        )
+        assert made.system_fingerprint == system_fingerprint()
+
+    def test_the_fingerprint_covers_the_prompt_and_nothing_else(self):
+        assert system_fingerprint("a") != system_fingerprint("a ")
+        assert len(system_fingerprint("a")) == 12
 
     def test_a_malformed_fixture_fails_loudly(self):
         with pytest.raises(DrafterError, match="malformed draft fixture"):
@@ -99,6 +121,13 @@ class TestReplay:
     def test_two_fixtures_for_one_question_fail(self):
         with pytest.raises(DrafterError, match="same question"):
             FixtureDrafter([recording(), recording()])
+
+    def test_a_draft_recorded_under_a_different_prompt_is_refused(self):
+        # Retrieval drifting is reported and still scored; an edited SYSTEM is
+        # not. The claims below answer a prompt this commit no longer sends,
+        # so replaying them would score one experiment's output as another's.
+        with pytest.raises(DrafterError, match="record-drafts"):
+            FixtureDrafter([recording(prompt="0" * 12)])
 
     def test_replay_does_not_read_the_passages_it_is_handed(self):
         # The recording holds what the model actually saw. Passing different

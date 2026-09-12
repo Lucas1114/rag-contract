@@ -34,7 +34,12 @@ verdicts instead would produce an eval that could never fail.
 
 The passages the draft was recorded against are stored with it, so a replay
 whose retrieval no longer matches can say so rather than quietly scoring a
-model response to a prompt it was never shown.
+model response to a prompt it was never shown. The prompt itself is stored the
+same way, as a fingerprint: retrieval moving is a legitimate change that a
+replay reports and keeps scoring, but an edited `SYSTEM` means the committed
+claims answer a question that was never asked in that form, and a fixture of a
+different experiment is not a fixture of this one. That one is refused rather
+than reported.
 
 About the prompt
 ----------------
@@ -48,6 +53,7 @@ check is the verifying.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import dataclass
@@ -101,6 +107,16 @@ If the passages do not answer the question, return an empty list of claims \
 rather than answering from your own knowledge. Do not pad an answer with \
 background that the passages do not contain.\
 """
+
+
+def system_fingerprint(prompt: str = SYSTEM) -> str:
+    """The content address of the drafting prompt, recorded with every draft.
+
+    The same idea as the index version and the questions fingerprint: an
+    artefact carries a hash of the input it was produced from, so it cannot be
+    replayed against a different one without saying so.
+    """
+    return hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:12]
 
 
 class DrafterError(RuntimeError):
@@ -210,6 +226,7 @@ class Recording:
     question: str
     model: str
     index_version: str
+    system_fingerprint: str  # of the prompt the claims were drafted under
     recorded_at: str
     passages: tuple[str, ...]  # section ids shown to the model, in rank order
     claims: tuple[Claim, ...]
@@ -220,6 +237,7 @@ class Recording:
             "question": self.question,
             "model": self.model,
             "index_version": self.index_version,
+            "system_fingerprint": self.system_fingerprint,
             "recorded_at": self.recorded_at,
             "passages": list(self.passages),
             "claims": [{"text": c.text, "citation": c.citation} for c in self.claims],
@@ -233,6 +251,7 @@ class Recording:
                 question=raw["question"],
                 model=raw["model"],
                 index_version=raw["index_version"],
+                system_fingerprint=raw["system_fingerprint"],
                 recorded_at=raw["recorded_at"],
                 passages=tuple(raw["passages"]),
                 claims=tuple(
@@ -257,6 +276,7 @@ def record(
         question=question,
         model=model,
         index_version=index_version,
+        system_fingerprint=system_fingerprint(),
         recorded_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         passages=tuple(p.section_id for p in passages),
         claims=tuple(claims),
@@ -290,12 +310,32 @@ class FixtureDrafter:
     reworded no longer answers the question being asked, and replaying it would
     score a model response to a prompt nobody sent; keying on the text turns
     that into a loud failure instead.
+
+    The drafting prompt is held to the same rule. A recording made under a
+    different `SYSTEM` is a recording of a different experiment, and replaying
+    it would report this commit's prompt scoring claims that another one
+    produced.
     """
 
     def __init__(self, recordings: list[Recording]):
         self._by_question = {r.question: r for r in recordings}
         if len(self._by_question) != len(recordings):
             raise DrafterError("two draft fixtures record the same question")
+        current = system_fingerprint()
+        stale = sorted(
+            {
+                r.system_fingerprint
+                for r in recordings
+                if r.system_fingerprint != current
+            }
+        )
+        if stale:
+            raise DrafterError(
+                f"drafts were recorded under prompt {', '.join(stale)}; "
+                f"drafter.SYSTEM is now {current}. Rerun "
+                "`rag-contract record-drafts`: these claims were written "
+                "against a prompt this commit no longer sends."
+            )
 
     @classmethod
     def from_directory(cls, directory: Path = FIXTURES_DIR) -> FixtureDrafter:
