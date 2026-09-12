@@ -16,11 +16,12 @@ from fastapi.testclient import TestClient
 from rag_contract.app import create_app
 from rag_contract.budget import Budget
 from rag_contract.evalset import Question
+from rag_contract.ratelimit import RateLimiter
 from rag_contract.registry import IndexRegistry
 from rag_contract.service import Service
 
 from .synthetic import make_index
-from .test_budget import TickingClock
+from .test_budget import Clock, TickingClock
 from .test_registry import BlockingDrafter, StaticDrafter
 
 VECTORS = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
@@ -228,3 +229,121 @@ def test_an_unknown_question_is_still_a_404_under_a_deadline(serving):
     """The budget is acquired before the question is looked up, and neither
     decision is allowed to hide the other."""
     assert budgeted_client(serving).get("/answer/nope").status_code == 404
+
+
+# --- The rate limit, through the surface that holds it ---------------------
+#
+# Guarantee 5's third ceiling. It is the one rule on this surface that is not
+# decided further down, because the eval harness has no notion of a caller —
+# see `app.py`. So it can only be pinned here.
+
+
+def limited(registry, requests_per_minute=60, burst=3, clock=None):
+    service = Service(registry=registry, questions=QUESTIONS, drafter=StaticDrafter())
+    limiter = RateLimiter(requests_per_minute, burst, clock=clock or (lambda: 0.0))
+    return TestClient(
+        create_app(service, limiter=limiter), raise_server_exceptions=False
+    )
+
+
+def test_a_client_past_its_allowance_is_refused_with_a_429(serving):
+    api = limited(serving, burst=3)
+    assert [api.get("/answer/qa").status_code for _ in range(3)] == [200, 200, 200]
+    assert api.get("/answer/qa").status_code == 429
+
+
+def test_the_refusal_says_when_to_come_back(serving):
+    api = limited(serving, requests_per_minute=60, burst=1)
+    api.get("/answer/qa")
+    refused = api.get("/answer/qa")
+    # A header, not just prose in the body: Retry-After is what a client
+    # library reads, and a 429 without one is an invitation to spin.
+    assert refused.headers["Retry-After"] == "1"
+    assert refused.json()["retry_after_s"] == 1
+
+
+def test_the_refusal_names_the_allowance_it_is_enforcing(serving):
+    api = limited(serving, requests_per_minute=60, burst=1)
+    api.get("/answer/qa")
+    body = api.get("/answer/qa").json()
+    assert body["limit"] == {"requests_per_minute": 60, "burst": 1}
+
+
+def test_a_429_attributes_itself_to_no_index(serving):
+    """It is not an answer that failed; it is a request that was never made.
+
+    Every other response on this surface carries `X-Index-Version`, including
+    the ones with no answer in them, because attribution is the point of
+    guarantee 4. This one carries none — the limiter runs before an index is
+    acquired, and naming a version here would attribute a refusal to vectors
+    that never saw it.
+    """
+    api = limited(serving, burst=1)
+    api.get("/answer/qa")
+    refused = api.get("/answer/qa")
+    assert "X-Index-Version" not in refused.headers
+    assert "index_version" not in refused.json()
+
+
+def test_the_limit_covers_health_too(serving):
+    """The most expensive route on the surface, and the one with no deadline.
+
+    `/health` re-reads and re-hashes the whole corpus to say whether the index
+    still describes it. Exempting it for the sake of liveness probes would
+    carve the hole in exactly the shape of the cheapest way to take the
+    process.
+    """
+    api = limited(serving, burst=1)
+    assert api.get("/health").status_code == 200
+    assert api.get("/health").status_code == 429
+
+
+def test_the_limit_is_spent_before_a_question_is_looked_up(serving):
+    """The limiter runs as middleware, so an unknown question costs a token.
+
+    A 404 that did not count would leave a free route: routing, matching and
+    building the response are work whoever asked did not pay for.
+    """
+    api = limited(serving, burst=1)
+    assert api.get("/answer/nope").status_code == 404
+    assert api.get("/answer/qa").status_code == 429
+
+
+def test_two_clients_are_limited_independently_over_http(serving):
+    """Per client, over the wire, keyed on the socket peer and nothing else."""
+    service = Service(registry=serving, questions=QUESTIONS, drafter=StaticDrafter())
+    app = create_app(service, limiter=RateLimiter(60, 1, clock=lambda: 0.0))
+    first = TestClient(app, client=("10.0.0.1", 40000))
+    second = TestClient(app, client=("10.0.0.2", 40000))
+
+    assert first.get("/answer/qa").status_code == 200
+    assert first.get("/answer/qa").status_code == 429
+    assert second.get("/answer/qa").status_code == 200
+
+
+def test_a_forwarded_for_header_does_not_buy_a_fresh_allowance(serving):
+    """The header is written by the caller, so trusting it is trusting nobody.
+
+    A limiter any client can step over by setting a header is not one, and this
+    is the concrete form of that: the same peer asking twice under two claimed
+    identities is still one client.
+    """
+    service = Service(registry=serving, questions=QUESTIONS, drafter=StaticDrafter())
+    app = create_app(service, limiter=RateLimiter(60, 1, clock=lambda: 0.0))
+    api = TestClient(app, client=("10.0.0.1", 40000))
+
+    assert (
+        api.get("/answer/qa", headers={"X-Forwarded-For": "1.1.1.1"}).status_code == 200
+    )
+    assert (
+        api.get("/answer/qa", headers={"X-Forwarded-For": "2.2.2.2"}).status_code == 429
+    )
+
+
+def test_the_allowance_refills_for_a_client_that_waits(serving):
+    clock = Clock()
+    api = limited(serving, requests_per_minute=60, burst=1, clock=clock)
+    assert api.get("/answer/qa").status_code == 200
+    assert api.get("/answer/qa").status_code == 429
+    clock.advance_ms(1000)
+    assert api.get("/answer/qa").status_code == 200

@@ -22,6 +22,24 @@ request", and reporting it on the failures is the part that matters: a request
 abandoned for spending its budget has to say which stage spent it, or an
 operator is left with a 503 and a guess.
 
+Where the rate limit lives, and why it is the exception
+------------------------------------------------------
+
+Everything above says decisions do not belong here. The rate limit is the one
+that does, and the reason is the same rule read from the other end: a rule
+belongs in `answering.py` when the eval harness can measure it, and the eval
+harness has no notion of a caller. It replays a fixed question set through
+`decide()`; there is no client, no socket and no second client to be crowded
+out by the first. The rate limit is a property of who is asking rather than of
+what the corpus can support, so the HTTP surface is the only layer that can
+see it, and it runs as middleware — before a handler, before an index is
+acquired, before anything is spent.
+
+Which is also why its response carries no `index_version` and no
+`X-Index-Version`. A 429 is not an answer that failed; it is a request that was
+never made, and naming an index on it would attribute something to a version
+that never saw it.
+
 What is not here
 ----------------
 
@@ -38,13 +56,14 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from .budget import DeadlineExceeded
 from .gate import load_thresholds
 from .index import IndexError_
 from .lifecycle import index_status
+from .ratelimit import UNKNOWN_CLIENT, RateLimiter
 from .registry import IndexRegistry
 from .service import Service, UnknownQuestion
 
@@ -65,7 +84,26 @@ def _startup_registry() -> IndexRegistry:
     return registry
 
 
-def create_app(service: Service | None = None) -> FastAPI:
+def client_key(request: Request) -> str:
+    """Who is asking, as far as this service is willing to believe.
+
+    The socket peer and nothing else. `X-Forwarded-For` is written by the
+    caller, so consulting it would let any client mint a fresh identity per
+    request and step over the limit by setting a header — a limiter any caller
+    can opt out of is not one. The cost is that behind a reverse proxy every
+    request arrives from the proxy and the per-client limit becomes a global
+    one; `ratelimit.py` says so rather than leaving it to be discovered.
+
+    A caller the transport cannot identify shares one bucket with every other
+    such caller, which is the conservative direction: the alternative is an
+    unidentified client having no limit at all.
+    """
+    return request.client.host if request.client else UNKNOWN_CLIENT
+
+
+def create_app(
+    service: Service | None = None, limiter: RateLimiter | None = None
+) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if app.state.service is None:
@@ -80,9 +118,49 @@ def create_app(service: Service | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.service = service
+    app.state.limiter = limiter or load_thresholds().budget.limiter()
 
     def current() -> Service:
         return app.state.service
+
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next):
+        """Guarantee 5's third ceiling, applied before anything is served.
+
+        Every route, including `/health`. Exempting it is the obvious kindness
+        and the wrong one: measured, `/health` costs 7.6 ms — as much as the
+        slowest question — because it re-reads and re-hashes the whole corpus
+        to answer whether the index still describes it, and it is the one route
+        that carries no deadline. An exemption there would be a hole shaped
+        exactly like the cheapest way to take the process.
+
+        The consequence is named rather than engineered around: a deployment's
+        liveness probe is a client like any other here, so it belongs on a path
+        this limiter does not see — the container directly, or a separate port
+        — rather than on a public route carving an exemption anyone can use.
+        """
+        decision = app.state.limiter.check(client_key(request))
+        if decision.allowed:
+            return await call_next(request)
+        return JSONResponse(
+            content={
+                "error": "rate limited",
+                "detail": (
+                    f"this client may make {app.state.limiter.requests_per_minute} "
+                    f"requests a minute, up to {app.state.limiter.burst} at once. "
+                    "The corpus is fixed and every answer is committed, so a "
+                    "repeated question has a repeated answer: retry after "
+                    f"{decision.retry_after_s}s."
+                ),
+                "limit": {
+                    "requests_per_minute": app.state.limiter.requests_per_minute,
+                    "burst": app.state.limiter.burst,
+                },
+                "retry_after_s": decision.retry_after_s,
+            },
+            status_code=429,
+            headers={"Retry-After": str(decision.retry_after_s)},
+        )
 
     @app.get("/health")
     def health() -> dict:

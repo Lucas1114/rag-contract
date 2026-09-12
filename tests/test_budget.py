@@ -35,6 +35,8 @@ LIMITS = {
     "daily_cap_usd": 2.00,
     "max_build_index_usd": 0.02,
     "max_record_drafts_usd": 1.00,
+    "max_requests_per_minute": 60,
+    "max_client_burst": 10,
 }
 
 
@@ -123,6 +125,49 @@ def test_a_command_budgeted_above_the_days_cap_is_refused(name):
     """The cap would never authorise the run this ceiling permits."""
     with pytest.raises(BudgetError, match=name):
         BudgetLimits.from_mapping({**LIMITS, name: 2.50})
+
+
+def test_an_allowance_that_lets_one_client_take_the_process_is_refused():
+    """The rule that makes the rate limit arithmetic rather than a preference.
+
+    At a 150 ms deadline, 400 requests a minute is one client entitled to a
+    whole process-minute. Every one of its requests stays legal and the
+    requests it crowds out are abandoned for spending a deadline they never
+    spent on work — which is the failure `ratelimit.py` measured.
+    """
+    with pytest.raises(BudgetError, match="process-minute"):
+        BudgetLimits.from_mapping({**LIMITS, "max_requests_per_minute": 400})
+
+
+def test_an_allowance_at_exactly_the_committed_share_is_allowed():
+    """A quarter of a process-minute: 100 a minute at a 150 ms deadline."""
+    limits = BudgetLimits.from_mapping({**LIMITS, "max_requests_per_minute": 100})
+    assert limits.max_requests_per_minute == 100
+
+
+def test_lengthening_the_deadline_tightens_the_allowance():
+    """The two numbers are one statement, so moving either moves the other.
+
+    600 a minute is fine against a 25 ms deadline and refused against 150 ms,
+    and nothing about the rate limit changed in between. That coupling is the
+    reason this rule lives with the deadline rather than beside the limiter.
+    """
+    loose = {**LIMITS, "request_deadline_ms": 25.0, "max_request_ms": 12.0}
+    assert (
+        BudgetLimits.from_mapping(
+            {**loose, "max_requests_per_minute": 600}
+        ).max_requests_per_minute
+        == 600
+    )
+    with pytest.raises(BudgetError, match="process-minute"):
+        BudgetLimits.from_mapping({**LIMITS, "max_requests_per_minute": 600})
+
+
+@pytest.mark.parametrize("name", ["max_requests_per_minute", "max_client_burst"])
+def test_a_fractional_allowance_is_a_typo_rather_than_a_smaller_one(name):
+    """Half a request a minute is not a tighter limit, it is a mistake."""
+    with pytest.raises(BudgetError, match="whole number"):
+        BudgetLimits.from_mapping({**LIMITS, name: 1.5})
 
 
 # --- What a request spends ------------------------------------------------

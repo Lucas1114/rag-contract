@@ -65,6 +65,17 @@ made against and fails *before* a deployment where the ceiling would fire. It
 cannot see an index installed at runtime by `registry.install`, which P05 built
 and which can be handed anything; the per-request deadline is the backstop for
 exactly that, and is the only one of the two that a served request ever reaches.
+
+A third number nobody expected to need
+--------------------------------------
+
+`BudgetLimits` also carries the rate limit, because it is the one place that
+can refuse a threshold file whose numbers contradict each other, and the rate
+limit and the deadline contradict each other easily: an allowance of R requests
+a minute, each entitled to `request_deadline_ms`, is a statement about how much
+of a process one client may demand. The limiter itself is in `ratelimit.py`,
+along with the measurement that says why this service needs one at all — which
+is not the reason a public service usually does.
 """
 
 from __future__ import annotations
@@ -74,7 +85,26 @@ import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
+from .ratelimit import RateLimiter
+
 Clock = Callable[[], float]
+
+# One process has sixty seconds of service time in a minute, and a request is
+# entitled to `request_deadline_ms` of it. That is what makes the rate limit
+# arithmetic rather than taste: a client allowed R requests a minute can demand
+# R x request_deadline_ms of a process-minute, and an allowance at or above
+# 100% is a limiter that permits one caller to take the whole process while
+# every one of its requests stays inside the deadline.
+#
+# A quarter is the committed share. It means four callers at the ceiling, all
+# of them in the worst case the deadline allows, are needed before a process is
+# saturated at all — so no single client's allowance can be the reason another
+# client waits. Today's requests are 7 ms rather than 150, so the real share of
+# the committed 60 a minute is under 1%; the share below is what the service
+# *promises* a request may cost, and a ceiling has to be coherent with the
+# promise rather than with the measurement.
+PROCESS_MINUTE_MS = 60_000.0
+MAX_CLIENT_SHARE = 0.25
 
 
 class BudgetError(RuntimeError):
@@ -122,6 +152,8 @@ class BudgetLimits:
     daily_cap_usd: float
     max_build_index_usd: float
     max_record_drafts_usd: float
+    max_requests_per_minute: int
+    max_client_burst: int
 
     @classmethod
     def from_mapping(cls, raw: Mapping | None) -> BudgetLimits:
@@ -131,13 +163,18 @@ class BudgetLimits:
                 "it is not held: a ceiling that lives in code is a ceiling "
                 "nobody reviews when it moves."
             )
-        fields = (
+        floats = (
             "request_deadline_ms",
             "max_request_ms",
             "daily_cap_usd",
             "max_build_index_usd",
             "max_record_drafts_usd",
         )
+        # Counts rather than quantities: half a request a minute is not a
+        # smaller allowance, it is a typo, so these are read as whole numbers
+        # and a fractional one is refused rather than silently floored.
+        integers = ("max_requests_per_minute", "max_client_burst")
+        fields = floats + integers
         missing = [name for name in fields if name not in raw]
         if missing:
             raise BudgetError(f"the budget block leaves {', '.join(missing)} unset")
@@ -146,8 +183,14 @@ class BudgetLimits:
             raise BudgetError(
                 f"the budget block sets {', '.join(unknown)}, which nothing reads"
             )
+        for name in integers:
+            if isinstance(raw[name], bool) or not isinstance(raw[name], int):
+                raise BudgetError(f"{name} must be a whole number of requests")
 
-        limits = cls(**{name: float(raw[name]) for name in fields})
+        limits = cls(
+            **{name: float(raw[name]) for name in floats},
+            **{name: int(raw[name]) for name in integers},
+        )
         for name in fields:
             if getattr(limits, name) <= 0:
                 raise BudgetError(f"{name} must be positive")
@@ -173,10 +216,52 @@ class BudgetLimits:
                     f"{limits.daily_cap_usd}. A command budgeted above the cap "
                     "is a command the cap would never authorise."
                 )
+        # A burst deeper than the minute's allowance is not a burst. It is the
+        # whole allowance, spendable at once, with the rate describing only how
+        # long the client then waits — which is the single-number limiter this
+        # one carries two numbers precisely to avoid.
+        if limits.max_client_burst > limits.max_requests_per_minute:
+            raise BudgetError(
+                f"max_client_burst {limits.max_client_burst} exceeds "
+                f"max_requests_per_minute {limits.max_requests_per_minute}. A "
+                "burst deeper than the minute's allowance is the allowance, "
+                "spent all at once."
+            )
+        # The rate limit and the deadline are one arithmetic statement, and
+        # that is why this number is not a matter of taste. See
+        # MAX_CLIENT_SHARE.
+        share = (
+            limits.max_requests_per_minute * limits.request_deadline_ms
+        ) / PROCESS_MINUTE_MS
+        if share > MAX_CLIENT_SHARE:
+            raise BudgetError(
+                f"max_requests_per_minute {limits.max_requests_per_minute} at a "
+                f"{limits.request_deadline_ms} ms deadline lets one client "
+                f"demand {share:.0%} of a process-minute, above the "
+                f"{MAX_CLIENT_SHARE:.0%} share a single caller may hold. A "
+                "client whose allowance alone can saturate the process is not "
+                "being limited, and the requests it crowds out are abandoned "
+                "for spending a deadline they never spent on work."
+            )
         return limits
 
     def budget(self, clock: Clock = time.perf_counter) -> Budget:
         return Budget(deadline_ms=self.request_deadline_ms, clock=clock)
+
+    def limiter(self, clock: Clock = time.monotonic, **kwargs) -> RateLimiter:
+        """The allowance the HTTP surface enforces, from the committed numbers.
+
+        Built here rather than read in `app.py`, for the reason the deadline
+        is: the process that composes the service is where
+        `eval/thresholds.yaml` is read, so the gate and the runtime cannot
+        disagree about what the ceiling is.
+        """
+        return RateLimiter(
+            requests_per_minute=self.max_requests_per_minute,
+            burst=self.max_client_burst,
+            clock=clock,
+            **kwargs,
+        )
 
 
 @dataclass(frozen=True)

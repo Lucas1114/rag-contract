@@ -186,6 +186,32 @@ budget:
   # document.
   max_build_index_usd: 0.02
 
+  # What one client may ask for, and how much of it at once.
+  #
+  # This is the third ceiling and the one whose justification had to be found
+  # rather than assumed. A served request spends no money and 7 ms of CPU, so
+  # this is not protecting cost or capacity. Measured under concurrent load, a
+  # single client is enough to push the process into contention until *other*
+  # clients' requests trip the deadline above and are abandoned with a 503 —
+  # reporting 125 ms in a retrieval stage that does 0.026 ms of work, because
+  # the thread was descheduled and the wall clock kept running. Without a limit
+  # here, the mechanism that holds guarantee 5 is a way to deny service.
+  # ratelimit.py carries the full measurement.
+  #
+  # 60 a minute is bounded above by arithmetic — budget.py refuses this file if
+  # one client's allowance times the deadline exceeds a quarter of a
+  # process-minute, which caps it at 100 — and bounded below by a workload that
+  # cannot grow: the corpus is fixed and the drafts are committed, so 60 a
+  # minute is the entire 28-question set twice over, every minute, and no
+  # honest caller has a reason to ask again.
+  max_requests_per_minute: 60
+
+  # How many of those 60 may be spent at once. A rate alone does not describe
+  # the failure above: 60 a minute permits 60 simultaneously, and simultaneous
+  # is exactly what produced the abandoned requests. 10 keeps one client inside
+  # the region the load measurement found clean.
+  max_client_burst: 10
+
   # The same idea for record-drafts, priced from the committed prompts and the
   # committed drafts: $0.6621. That is a floor rather than an estimate — the
   # fixtures hold the text the model returned and cannot hold the reasoning

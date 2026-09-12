@@ -37,6 +37,8 @@ budget:
   daily_cap_usd: 2.00
   max_build_index_usd: 0.02
   max_record_drafts_usd: 1.00
+  max_requests_per_minute: 60
+  max_client_burst: 10
 """
 
 REFUSAL = {
@@ -52,6 +54,8 @@ BUDGET = {
     "daily_cap_usd": 2.00,
     "max_build_index_usd": 0.02,
     "max_record_drafts_usd": 1.00,
+    "max_requests_per_minute": 60,
+    "max_client_burst": 10,
 }
 
 
