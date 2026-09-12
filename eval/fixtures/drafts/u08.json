@@ -1,0 +1,18 @@
+{
+  "question_id": "u08",
+  "question": "How does a browser decide whether to send a CORS preflight request?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:50:24Z",
+  "passages": [
+    "rfc9110#13.2.1",
+    "rfc9110#13",
+    "rfc9110#13.2.2",
+    "rfc9111#4.3.2",
+    "rfc9111#4.3.1",
+    "rfc9110#12.1",
+    "rfc9110#7.3.2",
+    "rfc9110#13.1"
+  ],
+  "claims": []
+}

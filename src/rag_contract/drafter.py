@@ -14,6 +14,14 @@ calls an API and committed as a build artefact; drafts are recorded once by a
 command that calls an API and committed the same way. Both leave the evaluation
 deterministic, free and keyless.
 
+The drafting model is the same vendor as the embedding model, reached the same
+way — raw httpx against the REST endpoint, as `embedding.py` documents. That is
+one credential for the whole project, used by exactly two commands, both of
+which run by hand and commit what they produce. The model is pinned to a dated
+snapshot rather than a floating alias for the same reason the index is
+content-addressed: a fixture recording `gpt-5.5` could not be re-recorded
+reproducibly once that alias moves.
+
 What a fixture does and does not freeze
 ---------------------------------------
 
@@ -52,10 +60,34 @@ from .grounding import Claim
 
 FIXTURES_DIR = Path(__file__).resolve().parents[2] / "eval" / "fixtures" / "drafts"
 _ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
-_KEY_NAME = "ANTHROPIC_API_KEY"
+_KEY_NAME = "OPENAI_API_KEY"
 
-MODEL = "claude-opus-5"
+MODEL = "gpt-5.5-2026-04-23"
+ENDPOINT = "https://api.openai.com/v1/chat/completions"
 MAX_TOKENS = 4000
+TIMEOUT_SECONDS = 180
+
+# The drafter must return claims, not prose, or there is nothing to check per
+# claim. Enforced by the API rather than by parsing whatever came back.
+CLAIM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "claims": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string"},
+                    "citation": {"type": "string"},
+                },
+                "required": ["text", "citation"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["claims"],
+    "additionalProperties": False,
+}
 
 SYSTEM = """\
 You answer questions strictly from the passages you are given, which are \
@@ -76,11 +108,11 @@ class DrafterError(RuntimeError):
 
 
 def _api_key() -> str:
-    """The answer key, read the same way the embedding key is.
+    """The API key, read the same way `embedding.py` reads it.
 
     Deliberately duplicated rather than shared: each network-calling module
-    owns its own credential, so the import graph that proves the gate reaches
-    no HTTP client also proves it reaches no key.
+    reads its own credential at the point of use, so the import graph that
+    proves the gate reaches no HTTP client also proves it reaches no key.
     """
     key = os.environ.get(_KEY_NAME, "").strip()
     if not key and _ENV_PATH.is_file():
@@ -112,40 +144,62 @@ def _prompt(question: str, passages: list[Passage]) -> str:
 class LiveDrafter:
     """The only class in the project that calls an answer model.
 
-    Imported inside the recording command rather than at module scope, the way
-    the embedding client is, so that `tests/test_ci_contract.py` can keep
-    asserting by import graph that the gate reaches no HTTP client.
+    `httpx` is imported inside `draft` rather than at module scope, the way
+    `embedding.py`'s client is, so `tests/test_ci_contract.py` can keep
+    asserting by import graph that nothing the gate touches reaches an HTTP
+    client.
+
+    The claim schema is enforced by the API's structured output rather than by
+    parsing prose afterwards. A drafter that returns a paragraph gives the
+    grounding check nothing to check per claim, so the structure is not a
+    convenience — it is what makes the guarantee enforceable at all.
     """
 
     model: str = MODEL
 
     def draft(self, question: str, passages: list[Passage]) -> list[Claim]:
-        import anthropic
-        from pydantic import BaseModel
+        import httpx
 
-        class DraftedClaim(BaseModel):
-            text: str
-            citation: str
-
-        class DraftedAnswer(BaseModel):
-            claims: list[DraftedClaim]
-
-        response = anthropic.Anthropic(api_key=_api_key()).messages.parse(
-            model=self.model,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM,
-            messages=[{"role": "user", "content": _prompt(question, passages)}],
-            output_format=DraftedAnswer,
+        response = httpx.post(
+            ENDPOINT,
+            headers={"Authorization": f"Bearer {_api_key()}"},
+            timeout=TIMEOUT_SECONDS,
+            json={
+                "model": self.model,
+                "max_completion_tokens": MAX_TOKENS,
+                "messages": [
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": _prompt(question, passages)},
+                ],
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "drafted_claims",
+                        "strict": True,
+                        "schema": CLAIM_SCHEMA,
+                    },
+                },
+            },
         )
-        if response.parsed_output is None:
+        if response.status_code != 200:
             raise DrafterError(
-                f"the model returned no parsable draft for {question!r} "
-                f"(stop_reason {response.stop_reason})"
+                f"drafting {question!r} failed with "
+                f"{response.status_code}: {response.text[:400]}"
             )
-        return [
-            Claim(text=c.text, citation=c.citation)
-            for c in response.parsed_output.claims
-        ]
+
+        choice = response.json()["choices"][0]
+        if choice.get("finish_reason") not in (None, "stop"):
+            raise DrafterError(
+                f"drafting {question!r} stopped on "
+                f"{choice['finish_reason']}; the draft would be truncated"
+            )
+        try:
+            drafted = json.loads(choice["message"]["content"])["claims"]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise DrafterError(
+                f"the model returned no parsable draft for {question!r}: {exc}"
+            ) from exc
+        return [Claim(text=c["text"], citation=c["citation"]) for c in drafted]
 
 
 @dataclass(frozen=True)

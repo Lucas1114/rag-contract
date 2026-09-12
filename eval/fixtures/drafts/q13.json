@@ -1,0 +1,31 @@
+{
+  "question_id": "q13",
+  "question": "When may a shared cache store a response to a request that carried an Authorization header field?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:38Z",
+  "passages": [
+    "rfc9111#3.5",
+    "rfc9111#3",
+    "rfc9111#4",
+    "rfc9111#5.2.2.9",
+    "rfc9110#16.4.2",
+    "rfc9111#3.2",
+    "rfc9110#11.6.2",
+    "rfc9111#7.3"
+  ],
+  "claims": [
+    {
+      "text": "Under rfc9111#3, a shared cache must not store a response to a request with an Authorization header field unless a response directive is present that explicitly allows shared caching, along with the other storage requirements in that section.",
+      "citation": "rfc9111#3"
+    },
+    {
+      "text": "Under rfc9111#3.5, the Cache-Control response directives identified as allowing a shared cache to store and later use a response to a request with an Authorization header field are must-revalidate, public, and s-maxage, provided the cache conforms to the requirements of the applicable directive for that response.",
+      "citation": "rfc9111#3.5"
+    },
+    {
+      "text": "Under rfc9111#5.2.2.9, the public response directive explicitly marks a response as cacheable and permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the constraints in Section 3.",
+      "citation": "rfc9111#5.2.2.9"
+    }
+  ]
+}

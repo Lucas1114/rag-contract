@@ -1,0 +1,22 @@
+{
+  "question_id": "q02",
+  "question": "How is a percent-encoded octet written in a URI?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:48:56Z",
+  "passages": [
+    "rfc3986#2.1",
+    "rfc3986#2.4",
+    "rfc3986#6.2.2.2",
+    "rfc3986#1.2.1",
+    "rfc3986#2.5",
+    "rfc3986#7.3",
+    "rfc3986#2"
+  ],
+  "claims": [
+    {
+      "text": "A percent-encoded octet is written as a character triplet consisting of the percent character \"%\" followed by the two hexadecimal digits representing that octet's numeric value.",
+      "citation": "rfc3986#2.1"
+    }
+  ]
+}

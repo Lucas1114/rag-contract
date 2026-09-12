@@ -1,0 +1,39 @@
+{
+  "question_id": "q12",
+  "question": "What does the s-maxage response directive do, and which caches does it apply to?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:32Z",
+  "passages": [
+    "rfc9111#5.2.2.10",
+    "rfc9111#3",
+    "rfc9111#5.2.2",
+    "rfc9111#5.2.1",
+    "rfc9111#3.5",
+    "rfc9111#5.2.2.3",
+    "rfc9111#8.2",
+    "rfc9111#5.2.3"
+  ],
+  "claims": [
+    {
+      "text": "The s-maxage response directive applies to a shared cache.",
+      "citation": "rfc9111#5.2.2.10"
+    },
+    {
+      "text": "For a shared cache, the s-maxage response directive overrides the maximum age specified by either the max-age directive or the Expires header field.",
+      "citation": "rfc9111#5.2.2.10"
+    },
+    {
+      "text": "For a shared cache, the s-maxage response directive incorporates the semantics of the proxy-revalidate response directive.",
+      "citation": "rfc9111#5.2.2.10"
+    },
+    {
+      "text": "A shared cache MUST NOT reuse a stale response with s-maxage to satisfy another request until it has been successfully validated by the origin.",
+      "citation": "rfc9111#5.2.2.10"
+    },
+    {
+      "text": "The s-maxage response directive permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the directive's requirements on maximum age and revalidation.",
+      "citation": "rfc9111#5.2.2.10"
+    }
+  ]
+}

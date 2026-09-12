@@ -1,0 +1,33 @@
+{
+  "question_id": "q11",
+  "question": "When may a cache use heuristic freshness?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:28Z",
+  "passages": [
+    "rfc9111#4.2.2",
+    "rfc9111#4.2",
+    "rfc9111#4.2.1",
+    "rfc9111#1",
+    "rfc9111#4.3.5",
+    "rfc9111#6"
+  ],
+  "claims": [
+    {
+      "text": "A cache may assign a heuristic expiration time when an explicit expiration time is not specified in the response.",
+      "citation": "rfc9111#4.2.2"
+    },
+    {
+      "text": "A cache must not use heuristics to determine freshness when an explicit expiration time is present in the stored response.",
+      "citation": "rfc9111#4.2.2"
+    },
+    {
+      "text": "A cache can use heuristics only on responses without explicit freshness whose status codes are defined as heuristically cacheable or that have been marked as explicitly cacheable.",
+      "citation": "rfc9111#4.2.2"
+    },
+    {
+      "text": "When s-maxage, max-age, and Expires do not provide an explicit expiration time, a heuristic freshness lifetime might be applicable.",
+      "citation": "rfc9111#4.2.1"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "question_id": "q15",
+  "question": "How is the end of a chunked message body signalled?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:55Z",
+  "passages": [
+    "rfc9112#7.1",
+    "rfc9112#6.3",
+    "rfc9112#7.1.1",
+    "rfc9112#8",
+    "rfc9112#7.1.3"
+  ],
+  "claims": [
+    {
+      "text": "RFC 9112 Section 7.1 states that the chunked transfer coding is complete when a chunk with a chunk-size of zero is received, possibly followed by a trailer section, and finally terminated by an empty line.",
+      "citation": "rfc9112#7.1"
+    },
+    {
+      "text": "RFC 9112 Section 8 states that a message body using the chunked transfer coding is incomplete if the zero-sized chunk that terminates the encoding has not been received.",
+      "citation": "rfc9112#8"
+    }
+  ]
+}

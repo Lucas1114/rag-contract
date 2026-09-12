@@ -1,0 +1,24 @@
+{
+  "question_id": "q19",
+  "question": "What minimum size per cookie should a user agent support?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:50:03Z",
+  "passages": [
+    "rfc6265#6.1",
+    "rfc6265#5",
+    "rfc6265#1",
+    "rfc6265#5.3",
+    "rfc6265#5.4",
+    "rfc6265#7.2",
+    "rfc6265#3.1",
+    "rfc6265#4.2.1",
+    "rfc6265#4.1.2.2"
+  ],
+  "claims": [
+    {
+      "text": "General-use user agents SHOULD provide a minimum capability of at least 4096 bytes per cookie, measured by the sum of the length of the cookie's name, value, and attributes.",
+      "citation": "rfc6265#6.1"
+    }
+  ]
+}

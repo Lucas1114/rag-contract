@@ -1,0 +1,77 @@
+{
+  "question_id": "q14",
+  "question": "How does a recipient determine the length of a message body in an HTTP/1.1 message?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:52Z",
+  "passages": [
+    "rfc9112#6.3",
+    "rfc9112#6",
+    "rfc9110#2.3",
+    "rfc9110#8.6",
+    "rfc9112#2.1",
+    "rfc9112#6.2"
+  ],
+  "claims": [
+    {
+      "text": "In rfc9112#6.3, a recipient determines the length of an HTTP/1.1 message body by applying the specified rules in order of precedence.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, any response to a HEAD request and any response with a 1xx, 204, or 304 status code is terminated by the first empty line after the header fields and therefore cannot contain a message body or trailer section.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, any 2xx response to a CONNECT request means the connection becomes a tunnel immediately after the empty line ending the header fields, and the client must ignore any Content-Length or Transfer-Encoding fields in that message.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if a message contains both Transfer-Encoding and Content-Length, Transfer-Encoding overrides Content-Length.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, an intermediary that forwards a message containing both Transfer-Encoding and Content-Length must remove the received Content-Length field and process the Transfer-Encoding before forwarding the message downstream.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if Transfer-Encoding is present and chunked is the final transfer coding, the message body length is determined by reading and decoding the chunked data until the transfer coding indicates completion.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if Transfer-Encoding is present in a response and chunked is not the final transfer coding, the message body length is determined by reading the connection until the server closes it.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if Transfer-Encoding is present in a request and chunked is not the final transfer coding, the message body length cannot be determined reliably and the server must respond with 400 Bad Request and close the connection.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if a message has no Transfer-Encoding and has an invalid Content-Length, the message framing is invalid and the recipient must treat it as an unrecoverable error unless the field value is a comma-separated list whose values are all valid and identical.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, when an invalid Content-Length value can be parsed as a comma-separated list whose values are all valid and identical, the message is processed using that single value as the Content-Length value.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if a valid Content-Length is present without Transfer-Encoding, its decimal value defines the expected message body length in octets.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if the sender closes the connection or the recipient times out before the number of octets indicated by Content-Length is received, the recipient must consider the message incomplete and close the connection.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if the message is a request and none of the preceding rules applies, the message body length is zero.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, if the message is otherwise a response without a declared message body length, the message body length is the number of octets received before the server closes the connection.",
+      "citation": "rfc9112#6.3"
+    },
+    {
+      "text": "In rfc9112#6.3, request messages are never close-delimited because they are explicitly framed by length or transfer coding, and the absence of both means the request ends immediately after the header section.",
+      "citation": "rfc9112#6.3"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "question_id": "q10",
+  "question": "How does a cache calculate the freshness lifetime of a stored response?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:23Z",
+  "passages": [
+    "rfc9111#4.2.1",
+    "rfc9111#4.2",
+    "rfc9111#4.2.2",
+    "rfc9111#1",
+    "rfc9111#4",
+    "rfc9111#3",
+    "rfc9111#4.3.4",
+    "rfc9111#4.3.5"
+  ],
+  "claims": [
+    {
+      "text": "A cache calculates a response's freshness lifetime by evaluating the freshness-lifetime rules in order and using the first rule that matches.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "If the cache is shared and the s-maxage response directive is present, the cache uses the s-maxage value as the freshness lifetime.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "If the max-age response directive is present, the cache uses the max-age value as the freshness lifetime.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "If the Expires response header field is present, the cache uses the Expires value minus the Date response header field value as the freshness lifetime, using the time the message was received if Date is not present.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "If no explicit expiration time is present in the response, a heuristic freshness lifetime might be applicable.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "When more than one value is present for a given freshness directive, the cache should either use the first occurrence or consider the response stale.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "If freshness directives conflict, the cache should honor the most restrictive directive.",
+      "citation": "rfc9111#4.2.1"
+    },
+    {
+      "text": "Caches are encouraged to consider responses with invalid freshness information to be stale.",
+      "citation": "rfc9111#4.2.1"
+    }
+  ]
+}

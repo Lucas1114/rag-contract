@@ -1,0 +1,19 @@
+{
+  "question_id": "u03",
+  "question": "How does the SameSite cookie attribute restrict cross-site requests?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:50:14Z",
+  "passages": [
+    "rfc6265#4.1.2.6",
+    "rfc6265#4.1.2.3",
+    "rfc6265#5.2.6",
+    "rfc6265#3.1",
+    "rfc6265#8.6",
+    "rfc6265#7.1",
+    "rfc6265#4.1.2.5",
+    "rfc6265#4.1.2.4",
+    "rfc6265#8.5"
+  ],
+  "claims": []
+}

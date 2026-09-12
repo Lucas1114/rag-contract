@@ -1,0 +1,39 @@
+{
+  "question_id": "q08",
+  "question": "How is a quality value in a content negotiation header field interpreted?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:18Z",
+  "passages": [
+    "rfc9110#12.4.2",
+    "rfc9110#12.3",
+    "rfc9110#12",
+    "rfc9110#8.8.3.3",
+    "rfc9110#12.5.5",
+    "rfc9110#12.4.1",
+    "rfc9110#12.4.3",
+    "rfc9110#12.1"
+  ],
+  "claims": [
+    {
+      "text": "A quality value in the content negotiation fields is the value of the case-insensitive \"q\" parameter, which assigns a relative weight to the preference for the associated kind of content.",
+      "citation": "rfc9110#12.4.2"
+    },
+    {
+      "text": "A quality value is normalized to a real number from 0 through 1, with 0.001 as the least preferred value and 1 as the most preferred value.",
+      "citation": "rfc9110#12.4.2"
+    },
+    {
+      "text": "A quality value of 0 means that the associated kind of content is not acceptable.",
+      "citation": "rfc9110#12.4.2"
+    },
+    {
+      "text": "If no \"q\" parameter is present, the default quality value is 1.",
+      "citation": "rfc9110#12.4.2"
+    },
+    {
+      "text": "A sender of a quality value must not generate more than three digits after the decimal point.",
+      "citation": "rfc9110#12.4.2"
+    }
+  ]
+}

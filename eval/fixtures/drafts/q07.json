@@ -1,0 +1,32 @@
+{
+  "question_id": "q07",
+  "question": "What does a Vary header field on a response tell a cache?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:14Z",
+  "passages": [
+    "rfc9111#4.1",
+    "rfc9110#12.5.5",
+    "rfc9111#3.2",
+    "rfc9111#2",
+    "rfc9111#4"
+  ],
+  "claims": [
+    {
+      "text": "A Vary header field in a response tells a cache which parts of the request message, aside from the method and target URI, might have influenced the origin server's selection of the response content.",
+      "citation": "rfc9110#12.5.5"
+    },
+    {
+      "text": "A Vary header field containing a list of field names tells cache recipients that they must not use the response for a later request unless the later request has the same values for the listed header fields as the original request or the origin server has validated reuse of the response.",
+      "citation": "rfc9110#12.5.5"
+    },
+    {
+      "text": "A Vary header field expands the cache key required to match a new request to a stored cache entry.",
+      "citation": "rfc9110#12.5.5"
+    },
+    {
+      "text": "A Vary header field with the wildcard member \"*\" tells a recipient that it will not be able to determine whether the response is appropriate for a later request without forwarding the request to the origin server.",
+      "citation": "rfc9110#12.5.5"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "question_id": "q16",
+  "question": "Which request-target form is used for a CONNECT request?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:57Z",
+  "passages": [
+    "rfc9110#9.3.6",
+    "rfc9112#3.2.1",
+    "rfc9112#3.2",
+    "rfc9112#3.2.3",
+    "rfc9110#7.1",
+    "rfc9112#3.2.4",
+    "rfc9112#3.3",
+    "rfc9112#3.2.2"
+  ],
+  "claims": [
+    {
+      "text": "The authority-form of request-target is only used for CONNECT requests.",
+      "citation": "rfc9112#3.2.3"
+    },
+    {
+      "text": "For CONNECT, the request target is the host name and port number of the tunnel destination, separated by a colon.",
+      "citation": "rfc9110#7.1"
+    }
+  ]
+}

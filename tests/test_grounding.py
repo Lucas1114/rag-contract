@@ -16,6 +16,7 @@ from rag_contract.grounding import (
     content_words,
     coverage,
     literals,
+    strip_citations,
 )
 
 SAFE_METHODS = (
@@ -53,6 +54,47 @@ class TestLiterals:
 
     def test_literals_are_deduplicated_in_order(self):
         assert literals("405 then 200 then 405") == ("405", "200")
+
+
+class TestSelfReferences:
+    """A claim naming its own section is pointing, not asserting.
+
+    Measured on the first recorded drafts: asked to cite, the model cited
+    twice — once in the citation field and once inside the prose — and 20 of
+    21 withdrawals were the check rejecting `rfc9112` and `6.3` for not
+    appearing in RFC 9112's own text. Correct claims, rejected for being
+    explicit about their source.
+    """
+
+    def test_a_section_id_in_the_prose_is_stripped(self):
+        assert "rfc9112" not in strip_citations("In rfc9112#6.3, a recipient ...")
+
+    def test_a_spelled_out_reference_is_stripped(self):
+        assert "9112" not in strip_citations("RFC 9112 Section 7.1 states that ...")
+
+    def test_a_bare_section_reference_is_stripped(self):
+        assert "8" not in strip_citations("Section 8 defines incomplete messages")
+
+    def test_what_the_claim_actually_asserts_survives(self):
+        stripped = strip_citations("In rfc9111#3.5, a shared cache MUST NOT store")
+        assert "shared cache MUST NOT store" in stripped
+
+    def test_a_real_literal_beside_a_reference_still_counts(self):
+        assert literals(
+            strip_citations("Under RFC 9110 Section 15.5.6, the code is 405.")
+        ) == ("405",)
+
+    def test_a_claim_is_not_rejected_for_citing_itself_in_prose(self):
+        passage = {"rfc9110#9.2.1": SAFE_METHODS}
+        verdict = check_claim(
+            Claim(
+                "In rfc9110#9.2.1, the GET, HEAD, OPTIONS, and TRACE methods "
+                "are defined to be safe.",
+                "rfc9110#9.2.1",
+            ),
+            passage,
+        )
+        assert verdict.grounded, verdict.detail
 
 
 class TestContentWords:

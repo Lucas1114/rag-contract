@@ -1,0 +1,24 @@
+{
+  "question_id": "u01",
+  "question": "How does HTTP/2 multiplex multiple requests over a single TCP connection?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:50:09Z",
+  "passages": [
+    "rfc9110#1.2",
+    "rfc9112#9",
+    "rfc9112#9.4",
+    "rfc9112#9.3.2",
+    "rfc9110#3.3",
+    "rfc9112#9.7",
+    "rfc9112#9.1",
+    "rfc9110#1.1",
+    "rfc9112#9.3"
+  ],
+  "claims": [
+    {
+      "text": "HTTP/2 introduced a multiplexed session layer on top of the existing TLS and TCP protocols for exchanging concurrent HTTP messages with efficient field compression and server push.",
+      "citation": "rfc9110#1.2"
+    }
+  ]
+}

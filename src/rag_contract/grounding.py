@@ -32,7 +32,8 @@ Three rules, applied in order, all lexical:
    numbers (`405`, `4096`), and protocol tokens spelled with internal capitals
    or hyphens (`Set-Cookie`, `HttpOnly`, `ALPHA`). A claim asserting a status
    code the passage never mentions fails here regardless of how well the rest
-   of it reads.
+   of it reads. Section references the claim makes about itself are stripped
+   first — they point at the evidence rather than being part of it.
 
 3. **Content-word coverage must clear a floor.** The claim's content words,
    minus stopwords, must largely appear in the passage.
@@ -82,6 +83,27 @@ STOPWORDS = frozenset((
 # so "HTTP/1.1" and "Set-Cookie" survive intact while the full stop ending a
 # sentence does not become part of "TRACE".
 _TOKEN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9\-_/.]*[A-Za-z0-9])?")
+
+# A claim often names its own section inside its prose — "In rfc9112#6.3, a
+# recipient determines ..." — because the drafter was asked to cite and says so
+# twice. Those tokens are a pointer, not an assertion: `rfc9112` and `6.3` are
+# facts about where the claim came from, and demanding they appear in the RFC's
+# own prose rejects correct claims for being explicit about their source. They
+# are removed before either rule looks at the text.
+#
+# This is fixed here rather than by forbidding it in the prompt, because a
+# check that depends on the model's cooperation is not a check.
+_SECTION_REFERENCE = re.compile(
+    r"\brfc\s?\d+\s?#\s?[A-Za-z0-9.]+"
+    r"|\bRFC\s+\d+,?\s+(?:Section|section|§)\s*[A-Za-z0-9.]+"
+    r"|\b(?:Section|section|§)\s*\d+(?:\.\d+)*\b",
+    re.IGNORECASE,
+)
+
+
+def strip_citations(text: str) -> str:
+    """Remove section references, which point at evidence rather than being it."""
+    return _SECTION_REFERENCE.sub(" ", text)
 
 
 def _tokens(text: str) -> list[str]:
@@ -210,12 +232,13 @@ def check_claim(
     # classify as literal: the question is whether the literal *occurs* here,
     # and "Allow" mid-sentence must satisfy a claim that writes "ALLOW".
     passage_tokens = {token.lower() for token in _tokens(passage)}
+    asserted = strip_citations(claim.text)
     missing = tuple(
         literal
-        for literal in literals(claim.text)
+        for literal in literals(asserted)
         if literal.lower() not in passage_tokens
     )
-    claim_coverage = coverage(claim.text, passage)
+    claim_coverage = coverage(asserted, passage)
     if missing:
         return Verdict(
             claim=claim,

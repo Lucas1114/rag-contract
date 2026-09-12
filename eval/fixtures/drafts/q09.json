@@ -1,0 +1,26 @@
+{
+  "question_id": "q09",
+  "question": "How does a server indicate that it supports range requests for a resource?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:19Z",
+  "passages": [
+    "rfc9110#14.2",
+    "rfc9110#14.3",
+    "rfc9110#14",
+    "rfc9110#17.15",
+    "rfc9110#13.1.5",
+    "rfc9110#14.4",
+    "rfc9110#15.3.7"
+  ],
+  "claims": [
+    {
+      "text": "A response indicates whether an upstream server supports range requests for the target resource by including the Accept-Ranges field.",
+      "citation": "rfc9110#14.3"
+    },
+    {
+      "text": "A server that supports byte-range requests can send Accept-Ranges: bytes to indicate that it supports byte range requests for that target resource.",
+      "citation": "rfc9110#14.3"
+    }
+  ]
+}

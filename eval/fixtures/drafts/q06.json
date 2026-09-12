@@ -1,0 +1,50 @@
+{
+  "question_id": "q06",
+  "question": "What distinguishes a strong validator from a weak validator?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:06Z",
+  "passages": [
+    "rfc9110#8.8.1",
+    "rfc9110#8.8.2.2",
+    "rfc9110#17.14",
+    "rfc9110#8.8.3.2",
+    "rfc9111#4.3.4",
+    "rfc9111#4.3.1",
+    "rfc9110#8.8"
+  ],
+  "claims": [
+    {
+      "text": "A strong validator is representation metadata that changes value whenever a change occurs to the representation data that would be observable in the content of a 200 (OK) response to GET.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "A weak validator is representation metadata that might not change for every change to the representation data.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "Strong validators are ideal for comparisons but can be very difficult, and occasionally impossible, to generate efficiently.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "Weak validators are easy to generate but are far less useful for comparisons.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "A strong validator is unique across all versions of all representations associated with a particular resource over time.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "A validator is weak if it is shared by two or more representations of a given resource at the same time, unless those representations have identical representation data.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "Strong validators are usable for all conditional requests, including cache validation, partial content ranges, and lost update avoidance.",
+      "citation": "rfc9110#8.8.1"
+    },
+    {
+      "text": "Weak validators are only usable when the client does not require exact equality with previously obtained representation data, such as when validating a cache entry or limiting a web traversal to recent changes.",
+      "citation": "rfc9110#8.8.1"
+    }
+  ]
+}

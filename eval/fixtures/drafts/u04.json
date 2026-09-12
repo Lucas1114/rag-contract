@@ -1,0 +1,17 @@
+{
+  "question_id": "u04",
+  "question": "What grant types does OAuth 2.0 define?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:50:15Z",
+  "passages": [
+    "rfc9110#11.1",
+    "rfc9110#19.2",
+    "rfc9110#9.1",
+    "rfc9110#16.4.2",
+    "rfc9110#18.10",
+    "rfc9110#16",
+    "rfc9112#3.1"
+  ],
+  "claims": []
+}

@@ -1,0 +1,2303 @@
+{
+  "index_version": "0fc1763d6701",
+  "coverage_floor": 0.67,
+  "top_k": 10,
+  "drafts": {
+    "models": [
+      "gpt-5.5-2026-04-23"
+    ],
+    "drifted_questions": []
+  },
+  "metrics": {
+    "answerable_questions": 20,
+    "unanswerable_questions": 8,
+    "states": {
+      "grounded": 19,
+      "unsupported": 7,
+      "partial": 2
+    },
+    "answered_unanswerable": 1,
+    "answered_unanswerable_ids": [
+      "u01"
+    ],
+    "grounded_answerable": 18,
+    "grounded_rate": 0.9,
+    "state_agreement": 0.625,
+    "disagreements": [
+      {
+        "id": "u01",
+        "expected": "partial",
+        "observed": "grounded"
+      },
+      {
+        "id": "u03",
+        "expected": "partial",
+        "observed": "unsupported"
+      },
+      {
+        "id": "u07",
+        "expected": "partial",
+        "observed": "unsupported"
+      }
+    ],
+    "withdrawn_claims": 3,
+    "supported_claims": 69
+  },
+  "questions": [
+    {
+      "question": "Which characters make up the unreserved set in a URI?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The unreserved set in a URI consists of uppercase and lowercase letters, decimal digits, hyphen, period, underscore, and tilde. [rfc3986#2.3]",
+      "message": "",
+      "citations": [
+        "rfc3986#2.3"
+      ],
+      "supported": [
+        {
+          "text": "The unreserved set in a URI consists of uppercase and lowercase letters, decimal digits, hyphen, period, underscore, and tilde.",
+          "citation": "rfc3986#2.3",
+          "coverage": 0.8462
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc3986#2.3",
+          "citation": "RFC 3986 Section 2.3: Unreserved Characters",
+          "rank": 1,
+          "score": 0.684
+        },
+        {
+          "section_id": "rfc3986#2.2",
+          "citation": "RFC 3986 Section 2.2: Reserved Characters",
+          "rank": 2,
+          "score": 0.6824
+        },
+        {
+          "section_id": "rfc3986#2",
+          "citation": "RFC 3986 Section 2: Characters",
+          "rank": 3,
+          "score": 0.6664
+        },
+        {
+          "section_id": "rfc3986#2.5",
+          "citation": "RFC 3986 Section 2.5: Identifying Data",
+          "rank": 5,
+          "score": 0.6195
+        },
+        {
+          "section_id": "rfc3986#A",
+          "citation": "RFC 3986 Section A: Collected ABNF for URI",
+          "rank": 6,
+          "score": 0.5968
+        },
+        {
+          "section_id": "rfc3986#1",
+          "citation": "RFC 3986 Section 1: Introduction",
+          "rank": 7,
+          "score": 0.5936
+        },
+        {
+          "section_id": "rfc3986#1.1",
+          "citation": "RFC 3986 Section 1.1: Overview of URIs",
+          "rank": 10,
+          "score": 0.5755
+        }
+      ],
+      "id": "q01",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How is a percent-encoded octet written in a URI?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A percent-encoded octet is written as a character triplet consisting of the percent character \"%\" followed by the two hexadecimal digits representing that octet's numeric value. [rfc3986#2.1]",
+      "message": "",
+      "citations": [
+        "rfc3986#2.1"
+      ],
+      "supported": [
+        {
+          "text": "A percent-encoded octet is written as a character triplet consisting of the percent character \"%\" followed by the two hexadecimal digits representing that octet's numeric value.",
+          "citation": "rfc3986#2.1",
+          "coverage": 0.9286
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc3986#2.1",
+          "citation": "RFC 3986 Section 2.1: Percent-Encoding",
+          "rank": 1,
+          "score": 0.7876
+        },
+        {
+          "section_id": "rfc3986#2.4",
+          "citation": "RFC 3986 Section 2.4: When to Encode or Decode",
+          "rank": 2,
+          "score": 0.7134
+        },
+        {
+          "section_id": "rfc3986#6.2.2.2",
+          "citation": "RFC 3986 Section 6.2.2.2: Percent-Encoding Normalization",
+          "rank": 3,
+          "score": 0.7012
+        },
+        {
+          "section_id": "rfc3986#1.2.1",
+          "citation": "RFC 3986 Section 1.2.1: Transcription",
+          "rank": 4,
+          "score": 0.6651
+        },
+        {
+          "section_id": "rfc3986#2.5",
+          "citation": "RFC 3986 Section 2.5: Identifying Data",
+          "rank": 5,
+          "score": 0.6322
+        },
+        {
+          "section_id": "rfc3986#7.3",
+          "citation": "RFC 3986 Section 7.3: Back-End Transcoding",
+          "rank": 8,
+          "score": 0.6189
+        },
+        {
+          "section_id": "rfc3986#2",
+          "citation": "RFC 3986 Section 2: Characters",
+          "rank": 10,
+          "score": 0.5987
+        }
+      ],
+      "id": "q02",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What does a URI fragment identifier identify?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A URI fragment identifier component allows indirect identification of a secondary resource by reference to a primary resource and additional identifying information. [rfc3986#3.5] The secondary resource identified by a fragment identifier may be a portion or subset of the primary resource, a view on representations of the primary resource, or some other resource defined or described by those representations. [rfc3986#3.5]",
+      "message": "",
+      "citations": [
+        "rfc3986#3.5"
+      ],
+      "supported": [
+        {
+          "text": "A URI fragment identifier component allows indirect identification of a secondary resource by reference to a primary resource and additional identifying information.",
+          "citation": "rfc3986#3.5",
+          "coverage": 1.0
+        },
+        {
+          "text": "The secondary resource identified by a fragment identifier may be a portion or subset of the primary resource, a view on representations of the primary resource, or some other resource defined or described by those representations.",
+          "citation": "rfc3986#3.5",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc3986#3.5",
+          "citation": "RFC 3986 Section 3.5: Fragment",
+          "rank": 1,
+          "score": 0.7555
+        },
+        {
+          "section_id": "rfc9110#4.2.5",
+          "citation": "RFC 9110 Section 4.2.5: http(s) References with Fragment Identifiers",
+          "rank": 3,
+          "score": 0.6997
+        },
+        {
+          "section_id": "rfc3986#4.3",
+          "citation": "RFC 3986 Section 4.3: Absolute URI",
+          "rank": 5,
+          "score": 0.5991
+        },
+        {
+          "section_id": "rfc9110#17.11",
+          "citation": "RFC 9110 Section 17.11: Disclosure of Fragment after Redirects",
+          "rank": 6,
+          "score": 0.5933
+        },
+        {
+          "section_id": "rfc9110#4",
+          "citation": "RFC 9110 Section 4: Identifiers in HTTP",
+          "rank": 7,
+          "score": 0.5815
+        },
+        {
+          "section_id": "rfc3986#1.2.2",
+          "citation": "RFC 3986 Section 1.2.2: Separating Identification from Interaction",
+          "rank": 8,
+          "score": 0.5717
+        },
+        {
+          "section_id": "rfc3986#1.1.3",
+          "citation": "RFC 3986 Section 1.1.3: URI, URL, and URN",
+          "rank": 9,
+          "score": 0.551
+        }
+      ],
+      "id": "q03",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "Which HTTP request methods are defined as safe?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The GET, HEAD, OPTIONS, and TRACE methods are defined to be safe. [rfc9110#9.2.1]",
+      "message": "",
+      "citations": [
+        "rfc9110#9.2.1"
+      ],
+      "supported": [
+        {
+          "text": "The GET, HEAD, OPTIONS, and TRACE methods are defined to be safe.",
+          "citation": "rfc9110#9.2.1",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#9.2.1",
+          "citation": "RFC 9110 Section 9.2.1: Safe Methods",
+          "rank": 1,
+          "score": 0.7779
+        },
+        {
+          "section_id": "rfc9110#9.2.2",
+          "citation": "RFC 9110 Section 9.2.2: Idempotent Methods",
+          "rank": 4,
+          "score": 0.5593
+        },
+        {
+          "section_id": "rfc9110#18.2",
+          "citation": "RFC 9110 Section 18.2: Method Registration",
+          "rank": 5,
+          "score": 0.5515
+        },
+        {
+          "section_id": "rfc9110#16.1.1",
+          "citation": "RFC 9110 Section 16.1.1: Method Registry",
+          "rank": 6,
+          "score": 0.5494
+        },
+        {
+          "section_id": "rfc9110#9.1",
+          "citation": "RFC 9110 Section 9.1: Overview",
+          "rank": 7,
+          "score": 0.527
+        },
+        {
+          "section_id": "rfc9110#16.1.2",
+          "citation": "RFC 9110 Section 16.1.2: Considerations for New Methods",
+          "rank": 8,
+          "score": 0.5265
+        },
+        {
+          "section_id": "rfc9110#4.2",
+          "citation": "RFC 9110 Section 4.2: HTTP-Related URI Schemes",
+          "rank": 9,
+          "score": 0.5154
+        }
+      ],
+      "id": "q04",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "Which status code means the server knows the request method but the target resource does not support it, and what must that response include?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The 405 (Method Not Allowed) status code indicates that the method received in the request-line is known by the origin server but not supported by the target resource, and the origin server MUST generate an Allow header field in a 405 response containing a list of the target resource's currently supported methods. [rfc9110#15.5.6]",
+      "message": "",
+      "citations": [
+        "rfc9110#15.5.6"
+      ],
+      "supported": [
+        {
+          "text": "The 405 (Method Not Allowed) status code indicates that the method received in the request-line is known by the origin server but not supported by the target resource, and the origin server MUST generate an Allow header field in a 405 response containing a list of the target resource's currently supported methods.",
+          "citation": "rfc9110#15.5.6",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#15.6.2",
+          "citation": "RFC 9110 Section 15.6.2: 501 Not Implemented",
+          "rank": 1,
+          "score": 0.6172
+        },
+        {
+          "section_id": "rfc9110#15.5.6",
+          "citation": "RFC 9110 Section 15.5.6: 405 Method Not Allowed",
+          "rank": 2,
+          "score": 0.6044
+        },
+        {
+          "section_id": "rfc9110#15.5.16",
+          "citation": "RFC 9110 Section 15.5.16: 415 Unsupported Media Type",
+          "rank": 3,
+          "score": 0.575
+        },
+        {
+          "section_id": "rfc9110#15.5.7",
+          "citation": "RFC 9110 Section 15.5.7: 406 Not Acceptable",
+          "rank": 4,
+          "score": 0.5573
+        },
+        {
+          "section_id": "rfc9110#15.6.6",
+          "citation": "RFC 9110 Section 15.6.6: 505 HTTP Version Not Supported",
+          "rank": 5,
+          "score": 0.5509
+        },
+        {
+          "section_id": "rfc9110#9.1",
+          "citation": "RFC 9110 Section 9.1: Overview",
+          "rank": 6,
+          "score": 0.5492
+        },
+        {
+          "section_id": "rfc9110#15.6",
+          "citation": "RFC 9110 Section 15.6: Server Error 5xx",
+          "rank": 7,
+          "score": 0.5329
+        },
+        {
+          "section_id": "rfc9110#18.3",
+          "citation": "RFC 9110 Section 18.3: Status Code Registration",
+          "rank": 8,
+          "score": 0.5264
+        },
+        {
+          "section_id": "rfc9110#15",
+          "citation": "RFC 9110 Section 15: Status Codes",
+          "rank": 9,
+          "score": 0.5197
+        },
+        {
+          "section_id": "rfc9110#15.5.4",
+          "citation": "RFC 9110 Section 15.5.4: 403 Forbidden",
+          "rank": 10,
+          "score": 0.5178
+        }
+      ],
+      "id": "q05",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What distinguishes a strong validator from a weak validator?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A strong validator is representation metadata that changes value whenever a change occurs to the representation data that would be observable in the content of a 200 (OK) response to GET. [rfc9110#8.8.1] A weak validator is representation metadata that might not change for every change to the representation data. [rfc9110#8.8.1] Strong validators are ideal for comparisons but can be very difficult, and occasionally impossible, to generate efficiently. [rfc9110#8.8.1] Weak validators are easy to generate but are far less useful for comparisons. [rfc9110#8.8.1] A strong validator is unique across all versions of all representations associated with a particular resource over time. [rfc9110#8.8.1] A validator is weak if it is shared by two or more representations of a given resource at the same time, unless those representations have identical representation data. [rfc9110#8.8.1] Strong validators are usable for all conditional requests, including cache validation, partial content ranges, and lost update avoidance. [rfc9110#8.8.1] Weak validators are only usable when the client does not require exact equality with previously obtained representation data, such as when validating a cache entry or limiting a web traversal to recent changes. [rfc9110#8.8.1]",
+      "message": "",
+      "citations": [
+        "rfc9110#8.8.1"
+      ],
+      "supported": [
+        {
+          "text": "A strong validator is representation metadata that changes value whenever a change occurs to the representation data that would be observable in the content of a 200 (OK) response to GET.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "A weak validator is representation metadata that might not change for every change to the representation data.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "Strong validators are ideal for comparisons but can be very difficult, and occasionally impossible, to generate efficiently.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "Weak validators are easy to generate but are far less useful for comparisons.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "A strong validator is unique across all versions of all representations associated with a particular resource over time.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "A validator is weak if it is shared by two or more representations of a given resource at the same time, unless those representations have identical representation data.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "Strong validators are usable for all conditional requests, including cache validation, partial content ranges, and lost update avoidance.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "Weak validators are only usable when the client does not require exact equality with previously obtained representation data, such as when validating a cache entry or limiting a web traversal to recent changes.",
+          "citation": "rfc9110#8.8.1",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#8.8.1",
+          "citation": "RFC 9110 Section 8.8.1: Weak versus Strong",
+          "rank": 1,
+          "score": 0.7414
+        },
+        {
+          "section_id": "rfc9110#8.8.2.2",
+          "citation": "RFC 9110 Section 8.8.2.2: Comparison",
+          "rank": 5,
+          "score": 0.5362
+        },
+        {
+          "section_id": "rfc9110#17.14",
+          "citation": "RFC 9110 Section 17.14: Validator Retention",
+          "rank": 6,
+          "score": 0.4961
+        },
+        {
+          "section_id": "rfc9110#8.8.3.2",
+          "citation": "RFC 9110 Section 8.8.3.2: Comparison",
+          "rank": 7,
+          "score": 0.4484
+        },
+        {
+          "section_id": "rfc9111#4.3.4",
+          "citation": "RFC 9111 Section 4.3.4: Freshening Stored Responses upon Validation",
+          "rank": 8,
+          "score": 0.4438
+        },
+        {
+          "section_id": "rfc9111#4.3.1",
+          "citation": "RFC 9111 Section 4.3.1: Sending a Validation Request",
+          "rank": 9,
+          "score": 0.4198
+        },
+        {
+          "section_id": "rfc9110#8.8",
+          "citation": "RFC 9110 Section 8.8: Validator Fields",
+          "rank": 10,
+          "score": 0.413
+        }
+      ],
+      "id": "q06",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What does a Vary header field on a response tell a cache?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A Vary header field in a response tells a cache which parts of the request message, aside from the method and target URI, might have influenced the origin server's selection of the response content. [rfc9110#12.5.5] A Vary header field containing a list of field names tells cache recipients that they must not use the response for a later request unless the later request has the same values for the listed header fields as the original request or the origin server has validated reuse of the response. [rfc9110#12.5.5] A Vary header field expands the cache key required to match a new request to a stored cache entry. [rfc9110#12.5.5] A Vary header field with the wildcard member \"*\" tells a recipient that it will not be able to determine whether the response is appropriate for a later request without forwarding the request to the origin server. [rfc9110#12.5.5]",
+      "message": "",
+      "citations": [
+        "rfc9110#12.5.5"
+      ],
+      "supported": [
+        {
+          "text": "A Vary header field in a response tells a cache which parts of the request message, aside from the method and target URI, might have influenced the origin server's selection of the response content.",
+          "citation": "rfc9110#12.5.5",
+          "coverage": 0.9474
+        },
+        {
+          "text": "A Vary header field containing a list of field names tells cache recipients that they must not use the response for a later request unless the later request has the same values for the listed header fields as the original request or the origin server has validated reuse of the response.",
+          "citation": "rfc9110#12.5.5",
+          "coverage": 0.9545
+        },
+        {
+          "text": "A Vary header field expands the cache key required to match a new request to a stored cache entry.",
+          "citation": "rfc9110#12.5.5",
+          "coverage": 1.0
+        },
+        {
+          "text": "A Vary header field with the wildcard member \"*\" tells a recipient that it will not be able to determine whether the response is appropriate for a later request without forwarding the request to the origin server.",
+          "citation": "rfc9110#12.5.5",
+          "coverage": 0.9444
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9111#4.1",
+          "citation": "RFC 9111 Section 4.1: Calculating Cache Keys with the Vary Header Field",
+          "rank": 1,
+          "score": 0.7774
+        },
+        {
+          "section_id": "rfc9110#12.5.5",
+          "citation": "RFC 9110 Section 12.5.5: Vary",
+          "rank": 3,
+          "score": 0.7302
+        },
+        {
+          "section_id": "rfc9111#3.2",
+          "citation": "RFC 9111 Section 3.2: Updating Stored Header Fields",
+          "rank": 7,
+          "score": 0.6116
+        },
+        {
+          "section_id": "rfc9111#2",
+          "citation": "RFC 9111 Section 2: Overview of Cache Operation",
+          "rank": 8,
+          "score": 0.5908
+        },
+        {
+          "section_id": "rfc9111#4",
+          "citation": "RFC 9111 Section 4: Constructing Responses from Caches",
+          "rank": 10,
+          "score": 0.569
+        }
+      ],
+      "id": "q07",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How is a quality value in a content negotiation header field interpreted?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A quality value in the content negotiation fields is the value of the case-insensitive \"q\" parameter, which assigns a relative weight to the preference for the associated kind of content. [rfc9110#12.4.2] A quality value is normalized to a real number from 0 through 1, with 0.001 as the least preferred value and 1 as the most preferred value. [rfc9110#12.4.2] A quality value of 0 means that the associated kind of content is not acceptable. [rfc9110#12.4.2] If no \"q\" parameter is present, the default quality value is 1. [rfc9110#12.4.2] A sender of a quality value must not generate more than three digits after the decimal point. [rfc9110#12.4.2]",
+      "message": "",
+      "citations": [
+        "rfc9110#12.4.2"
+      ],
+      "supported": [
+        {
+          "text": "A quality value in the content negotiation fields is the value of the case-insensitive \"q\" parameter, which assigns a relative weight to the preference for the associated kind of content.",
+          "citation": "rfc9110#12.4.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "A quality value is normalized to a real number from 0 through 1, with 0.001 as the least preferred value and 1 as the most preferred value.",
+          "citation": "rfc9110#12.4.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "A quality value of 0 means that the associated kind of content is not acceptable.",
+          "citation": "rfc9110#12.4.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "If no \"q\" parameter is present, the default quality value is 1.",
+          "citation": "rfc9110#12.4.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "A sender of a quality value must not generate more than three digits after the decimal point.",
+          "citation": "rfc9110#12.4.2",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#12.4.2",
+          "citation": "RFC 9110 Section 12.4.2: Quality Values",
+          "rank": 1,
+          "score": 0.6437
+        },
+        {
+          "section_id": "rfc9110#12.3",
+          "citation": "RFC 9110 Section 12.3: Request Content Negotiation",
+          "rank": 2,
+          "score": 0.567
+        },
+        {
+          "section_id": "rfc9110#12",
+          "citation": "RFC 9110 Section 12: Content Negotiation",
+          "rank": 3,
+          "score": 0.5514
+        },
+        {
+          "section_id": "rfc9110#8.8.3.3",
+          "citation": "RFC 9110 Section 8.8.3.3: Example: Entity Tags Varying on Content-Negotiated Resources",
+          "rank": 5,
+          "score": 0.529
+        },
+        {
+          "section_id": "rfc9110#12.5.5",
+          "citation": "RFC 9110 Section 12.5.5: Vary",
+          "rank": 6,
+          "score": 0.5192
+        },
+        {
+          "section_id": "rfc9110#12.4.1",
+          "citation": "RFC 9110 Section 12.4.1: Absence",
+          "rank": 7,
+          "score": 0.5185
+        },
+        {
+          "section_id": "rfc9110#12.4.3",
+          "citation": "RFC 9110 Section 12.4.3: Wildcard Values",
+          "rank": 8,
+          "score": 0.517
+        },
+        {
+          "section_id": "rfc9110#12.1",
+          "citation": "RFC 9110 Section 12.1: Proactive Negotiation",
+          "rank": 9,
+          "score": 0.5159
+        }
+      ],
+      "id": "q08",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How does a server indicate that it supports range requests for a resource?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A response indicates whether an upstream server supports range requests for the target resource by including the Accept-Ranges field. [rfc9110#14.3] A server that supports byte-range requests can send Accept-Ranges: bytes to indicate that it supports byte range requests for that target resource. [rfc9110#14.3]",
+      "message": "",
+      "citations": [
+        "rfc9110#14.3"
+      ],
+      "supported": [
+        {
+          "text": "A response indicates whether an upstream server supports range requests for the target resource by including the Accept-Ranges field.",
+          "citation": "rfc9110#14.3",
+          "coverage": 0.9231
+        },
+        {
+          "text": "A server that supports byte-range requests can send Accept-Ranges: bytes to indicate that it supports byte range requests for that target resource.",
+          "citation": "rfc9110#14.3",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#14.2",
+          "citation": "RFC 9110 Section 14.2: Range",
+          "rank": 1,
+          "score": 0.6881
+        },
+        {
+          "section_id": "rfc9110#14.3",
+          "citation": "RFC 9110 Section 14.3: Accept-Ranges",
+          "rank": 2,
+          "score": 0.6794
+        },
+        {
+          "section_id": "rfc9110#14",
+          "citation": "RFC 9110 Section 14: Range Requests",
+          "rank": 3,
+          "score": 0.6655
+        },
+        {
+          "section_id": "rfc9110#17.15",
+          "citation": "RFC 9110 Section 17.15: Denial-of-Service Attacks Using Range",
+          "rank": 7,
+          "score": 0.6355
+        },
+        {
+          "section_id": "rfc9110#13.1.5",
+          "citation": "RFC 9110 Section 13.1.5: If-Range",
+          "rank": 8,
+          "score": 0.5982
+        },
+        {
+          "section_id": "rfc9110#14.4",
+          "citation": "RFC 9110 Section 14.4: Content-Range",
+          "rank": 9,
+          "score": 0.5909
+        },
+        {
+          "section_id": "rfc9110#15.3.7",
+          "citation": "RFC 9110 Section 15.3.7: 206 Partial Content",
+          "rank": 10,
+          "score": 0.5732
+        }
+      ],
+      "id": "q09",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How does a cache calculate the freshness lifetime of a stored response?",
+      "state": "partial",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "If the cache is shared and the s-maxage response directive is present, the cache uses the s-maxage value as the freshness lifetime. [rfc9111#4.2.1] If the max-age response directive is present, the cache uses the max-age value as the freshness lifetime. [rfc9111#4.2.1] If the Expires response header field is present, the cache uses the Expires value minus the Date response header field value as the freshness lifetime, using the time the message was received if Date is not present. [rfc9111#4.2.1] If no explicit expiration time is present in the response, a heuristic freshness lifetime might be applicable. [rfc9111#4.2.1] When more than one value is present for a given freshness directive, the cache should either use the first occurrence or consider the response stale. [rfc9111#4.2.1] If freshness directives conflict, the cache should honor the most restrictive directive. [rfc9111#4.2.1] Caches are encouraged to consider responses with invalid freshness information to be stale. [rfc9111#4.2.1]",
+      "message": "1 of 8 drafted claims were not supported by the passages they cited and have been withdrawn.",
+      "citations": [
+        "rfc9111#4.2.1"
+      ],
+      "supported": [
+        {
+          "text": "If the cache is shared and the s-maxage response directive is present, the cache uses the s-maxage value as the freshness lifetime.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "If the max-age response directive is present, the cache uses the max-age value as the freshness lifetime.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "If the Expires response header field is present, the cache uses the Expires value minus the Date response header field value as the freshness lifetime, using the time the message was received if Date is not present.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "If no explicit expiration time is present in the response, a heuristic freshness lifetime might be applicable.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "When more than one value is present for a given freshness directive, the cache should either use the first occurrence or consider the response stale.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 1.0
+        },
+        {
+          "text": "If freshness directives conflict, the cache should honor the most restrictive directive.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 0.875
+        },
+        {
+          "text": "Caches are encouraged to consider responses with invalid freshness information to be stale.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [
+        {
+          "text": "A cache calculates a response's freshness lifetime by evaluating the freshness-lifetime rules in order and using the first rule that matches.",
+          "citation": "rfc9111#4.2.1",
+          "rule": "literal not in passage",
+          "detail": "rfc9111#4.2.1 does not contain freshness-lifetime",
+          "coverage": 0.6923
+        }
+      ],
+      "consulted": [
+        {
+          "section_id": "rfc9111#4.2.1",
+          "citation": "RFC 9111 Section 4.2.1: Calculating Freshness Lifetime",
+          "rank": 1,
+          "score": 0.7818
+        },
+        {
+          "section_id": "rfc9111#4.2",
+          "citation": "RFC 9111 Section 4.2: Freshness",
+          "rank": 2,
+          "score": 0.7114
+        },
+        {
+          "section_id": "rfc9111#4.2.2",
+          "citation": "RFC 9111 Section 4.2.2: Calculating Heuristic Freshness",
+          "rank": 4,
+          "score": 0.6621
+        },
+        {
+          "section_id": "rfc9111#1",
+          "citation": "RFC 9111 Section 1: Introduction",
+          "rank": 5,
+          "score": 0.6486
+        },
+        {
+          "section_id": "rfc9111#4",
+          "citation": "RFC 9111 Section 4: Constructing Responses from Caches",
+          "rank": 6,
+          "score": 0.6327
+        },
+        {
+          "section_id": "rfc9111#3",
+          "citation": "RFC 9111 Section 3: Storing Responses in Caches",
+          "rank": 7,
+          "score": 0.6213
+        },
+        {
+          "section_id": "rfc9111#4.3.4",
+          "citation": "RFC 9111 Section 4.3.4: Freshening Stored Responses upon Validation",
+          "rank": 9,
+          "score": 0.6069
+        },
+        {
+          "section_id": "rfc9111#4.3.5",
+          "citation": "RFC 9111 Section 4.3.5: Freshening Responses with HEAD",
+          "rank": 10,
+          "score": 0.6049
+        }
+      ],
+      "id": "q10",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": false,
+      "drift": []
+    },
+    {
+      "question": "When may a cache use heuristic freshness?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A cache may assign a heuristic expiration time when an explicit expiration time is not specified in the response. [rfc9111#4.2.2] A cache must not use heuristics to determine freshness when an explicit expiration time is present in the stored response. [rfc9111#4.2.2] A cache can use heuristics only on responses without explicit freshness whose status codes are defined as heuristically cacheable or that have been marked as explicitly cacheable. [rfc9111#4.2.2] When s-maxage, max-age, and Expires do not provide an explicit expiration time, a heuristic freshness lifetime might be applicable. [rfc9111#4.2.1]",
+      "message": "",
+      "citations": [
+        "rfc9111#4.2.2",
+        "rfc9111#4.2.1"
+      ],
+      "supported": [
+        {
+          "text": "A cache may assign a heuristic expiration time when an explicit expiration time is not specified in the response.",
+          "citation": "rfc9111#4.2.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "A cache must not use heuristics to determine freshness when an explicit expiration time is present in the stored response.",
+          "citation": "rfc9111#4.2.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "A cache can use heuristics only on responses without explicit freshness whose status codes are defined as heuristically cacheable or that have been marked as explicitly cacheable.",
+          "citation": "rfc9111#4.2.2",
+          "coverage": 1.0
+        },
+        {
+          "text": "When s-maxage, max-age, and Expires do not provide an explicit expiration time, a heuristic freshness lifetime might be applicable.",
+          "citation": "rfc9111#4.2.1",
+          "coverage": 0.9167
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9111#4.2.2",
+          "citation": "RFC 9111 Section 4.2.2: Calculating Heuristic Freshness",
+          "rank": 1,
+          "score": 0.7272
+        },
+        {
+          "section_id": "rfc9111#4.2",
+          "citation": "RFC 9111 Section 4.2: Freshness",
+          "rank": 3,
+          "score": 0.656
+        },
+        {
+          "section_id": "rfc9111#4.2.1",
+          "citation": "RFC 9111 Section 4.2.1: Calculating Freshness Lifetime",
+          "rank": 5,
+          "score": 0.6157
+        },
+        {
+          "section_id": "rfc9111#1",
+          "citation": "RFC 9111 Section 1: Introduction",
+          "rank": 7,
+          "score": 0.5669
+        },
+        {
+          "section_id": "rfc9111#4.3.5",
+          "citation": "RFC 9111 Section 4.3.5: Freshening Responses with HEAD",
+          "rank": 8,
+          "score": 0.5655
+        },
+        {
+          "section_id": "rfc9111#6",
+          "citation": "RFC 9111 Section 6: Relationship to Applications and Other Caches",
+          "rank": 9,
+          "score": 0.5567
+        }
+      ],
+      "id": "q11",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What does the s-maxage response directive do, and which caches does it apply to?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The s-maxage response directive applies to a shared cache. [rfc9111#5.2.2.10] For a shared cache, the s-maxage response directive overrides the maximum age specified by either the max-age directive or the Expires header field. [rfc9111#5.2.2.10] For a shared cache, the s-maxage response directive incorporates the semantics of the proxy-revalidate response directive. [rfc9111#5.2.2.10] A shared cache MUST NOT reuse a stale response with s-maxage to satisfy another request until it has been successfully validated by the origin. [rfc9111#5.2.2.10] The s-maxage response directive permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the directive's requirements on maximum age and revalidation. [rfc9111#5.2.2.10]",
+      "message": "",
+      "citations": [
+        "rfc9111#5.2.2.10"
+      ],
+      "supported": [
+        {
+          "text": "The s-maxage response directive applies to a shared cache.",
+          "citation": "rfc9111#5.2.2.10",
+          "coverage": 0.8333
+        },
+        {
+          "text": "For a shared cache, the s-maxage response directive overrides the maximum age specified by either the max-age directive or the Expires header field.",
+          "citation": "rfc9111#5.2.2.10",
+          "coverage": 1.0
+        },
+        {
+          "text": "For a shared cache, the s-maxage response directive incorporates the semantics of the proxy-revalidate response directive.",
+          "citation": "rfc9111#5.2.2.10",
+          "coverage": 1.0
+        },
+        {
+          "text": "A shared cache MUST NOT reuse a stale response with s-maxage to satisfy another request until it has been successfully validated by the origin.",
+          "citation": "rfc9111#5.2.2.10",
+          "coverage": 1.0
+        },
+        {
+          "text": "The s-maxage response directive permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the directive's requirements on maximum age and revalidation.",
+          "citation": "rfc9111#5.2.2.10",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9111#5.2.2.10",
+          "citation": "RFC 9111 Section 5.2.2.10: s-maxage",
+          "rank": 1,
+          "score": 0.6373
+        },
+        {
+          "section_id": "rfc9111#3",
+          "citation": "RFC 9111 Section 3: Storing Responses in Caches",
+          "rank": 2,
+          "score": 0.6315
+        },
+        {
+          "section_id": "rfc9111#5.2.2",
+          "citation": "RFC 9111 Section 5.2.2: Response Directives",
+          "rank": 3,
+          "score": 0.6048
+        },
+        {
+          "section_id": "rfc9111#5.2.1",
+          "citation": "RFC 9111 Section 5.2.1: Request Directives",
+          "rank": 4,
+          "score": 0.5938
+        },
+        {
+          "section_id": "rfc9111#3.5",
+          "citation": "RFC 9111 Section 3.5: Storing Responses to Authenticated Requests",
+          "rank": 5,
+          "score": 0.5681
+        },
+        {
+          "section_id": "rfc9111#5.2.2.3",
+          "citation": "RFC 9111 Section 5.2.2.3: must-understand",
+          "rank": 7,
+          "score": 0.5473
+        },
+        {
+          "section_id": "rfc9111#8.2",
+          "citation": "RFC 9111 Section 8.2: Cache Directive Registration",
+          "rank": 8,
+          "score": 0.5437
+        },
+        {
+          "section_id": "rfc9111#5.2.3",
+          "citation": "RFC 9111 Section 5.2.3: Extension Directives",
+          "rank": 9,
+          "score": 0.5305
+        }
+      ],
+      "id": "q12",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "When may a shared cache store a response to a request that carried an Authorization header field?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "Under rfc9111#3, a shared cache must not store a response to a request with an Authorization header field unless a response directive is present that explicitly allows shared caching, along with the other storage requirements in that section. [rfc9111#3] Under rfc9111#3.5, the Cache-Control response directives identified as allowing a shared cache to store and later use a response to a request with an Authorization header field are must-revalidate, public, and s-maxage, provided the cache conforms to the requirements of the applicable directive for that response. [rfc9111#3.5] Under rfc9111#5.2.2.9, the public response directive explicitly marks a response as cacheable and permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the constraints in Section 3. [rfc9111#5.2.2.9]",
+      "message": "",
+      "citations": [
+        "rfc9111#3",
+        "rfc9111#3.5",
+        "rfc9111#5.2.2.9"
+      ],
+      "supported": [
+        {
+          "text": "Under rfc9111#3, a shared cache must not store a response to a request with an Authorization header field unless a response directive is present that explicitly allows shared caching, along with the other storage requirements in that section.",
+          "citation": "rfc9111#3",
+          "coverage": 0.8
+        },
+        {
+          "text": "Under rfc9111#3.5, the Cache-Control response directives identified as allowing a shared cache to store and later use a response to a request with an Authorization header field are must-revalidate, public, and s-maxage, provided the cache conforms to the requirements of the applicable directive for that response.",
+          "citation": "rfc9111#3.5",
+          "coverage": 0.6957
+        },
+        {
+          "text": "Under rfc9111#5.2.2.9, the public response directive explicitly marks a response as cacheable and permits a shared cache to reuse a response to a request containing an Authorization header field, subject to the constraints in Section 3.",
+          "citation": "rfc9111#5.2.2.9",
+          "coverage": 0.9444
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9111#3.5",
+          "citation": "RFC 9111 Section 3.5: Storing Responses to Authenticated Requests",
+          "rank": 1,
+          "score": 0.7847
+        },
+        {
+          "section_id": "rfc9111#3",
+          "citation": "RFC 9111 Section 3: Storing Responses in Caches",
+          "rank": 2,
+          "score": 0.6713
+        },
+        {
+          "section_id": "rfc9111#4",
+          "citation": "RFC 9111 Section 4: Constructing Responses from Caches",
+          "rank": 3,
+          "score": 0.636
+        },
+        {
+          "section_id": "rfc9111#5.2.2.9",
+          "citation": "RFC 9111 Section 5.2.2.9: public",
+          "rank": 5,
+          "score": 0.6116
+        },
+        {
+          "section_id": "rfc9110#16.4.2",
+          "citation": "RFC 9110 Section 16.4.2: Considerations for New Authentication Schemes",
+          "rank": 6,
+          "score": 0.611
+        },
+        {
+          "section_id": "rfc9111#3.2",
+          "citation": "RFC 9111 Section 3.2: Updating Stored Header Fields",
+          "rank": 7,
+          "score": 0.6071
+        },
+        {
+          "section_id": "rfc9110#11.6.2",
+          "citation": "RFC 9110 Section 11.6.2: Authorization",
+          "rank": 8,
+          "score": 0.6067
+        },
+        {
+          "section_id": "rfc9111#7.3",
+          "citation": "RFC 9111 Section 7.3: Caching of Sensitive Information",
+          "rank": 10,
+          "score": 0.5906
+        }
+      ],
+      "id": "q13",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How does a recipient determine the length of a message body in an HTTP/1.1 message?",
+      "state": "partial",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "In rfc9112#6.3, any response to a HEAD request and any response with a 1xx, 204, or 304 status code is terminated by the first empty line after the header fields and therefore cannot contain a message body or trailer section. [rfc9112#6.3] In rfc9112#6.3, any 2xx response to a CONNECT request means the connection becomes a tunnel immediately after the empty line ending the header fields, and the client must ignore any Content-Length or Transfer-Encoding fields in that message. [rfc9112#6.3] In rfc9112#6.3, if a message contains both Transfer-Encoding and Content-Length, Transfer-Encoding overrides Content-Length. [rfc9112#6.3] In rfc9112#6.3, an intermediary that forwards a message containing both Transfer-Encoding and Content-Length must remove the received Content-Length field and process the Transfer-Encoding before forwarding the message downstream. [rfc9112#6.3] In rfc9112#6.3, if Transfer-Encoding is present and chunked is the final transfer coding, the message body length is determined by reading and decoding the chunked data until the transfer coding indicates completion. [rfc9112#6.3] In rfc9112#6.3, if Transfer-Encoding is present in a response and chunked is not the final transfer coding, the message body length is determined by reading the connection until the server closes it. [rfc9112#6.3] In rfc9112#6.3, if Transfer-Encoding is present in a request and chunked is not the final transfer coding, the message body length cannot be determined reliably and the server must respond with 400 Bad Request and close the connection. [rfc9112#6.3] In rfc9112#6.3, if a message has no Transfer-Encoding and has an invalid Content-Length, the message framing is invalid and the recipient must treat it as an unrecoverable error unless the field value is a comma-separated list whose values are all valid and identical. [rfc9112#6.3] In rfc9112#6.3, when an invalid Content-Length value can be parsed as a comma-separated list whose values are all valid and identical, the message is processed using that single value as the Content-Length value. [rfc9112#6.3] In rfc9112#6.3, if a valid Content-Length is present without Transfer-Encoding, its decimal value defines the expected message body length in octets. [rfc9112#6.3] In rfc9112#6.3, if the sender closes the connection or the recipient times out before the number of octets indicated by Content-Length is received, the recipient must consider the message incomplete and close the connection. [rfc9112#6.3] In rfc9112#6.3, if the message is otherwise a response without a declared message body length, the message body length is the number of octets received before the server closes the connection. [rfc9112#6.3] In rfc9112#6.3, request messages are never close-delimited because they are explicitly framed by length or transfer coding, and the absence of both means the request ends immediately after the header section. [rfc9112#6.3]",
+      "message": "2 of 15 drafted claims were not supported by the passages they cited and have been withdrawn.",
+      "citations": [
+        "rfc9112#6.3"
+      ],
+      "supported": [
+        {
+          "text": "In rfc9112#6.3, any response to a HEAD request and any response with a 1xx, 204, or 304 status code is terminated by the first empty line after the header fields and therefore cannot contain a message body or trailer section.",
+          "citation": "rfc9112#6.3",
+          "coverage": 0.9545
+        },
+        {
+          "text": "In rfc9112#6.3, any 2xx response to a CONNECT request means the connection becomes a tunnel immediately after the empty line ending the header fields, and the client must ignore any Content-Length or Transfer-Encoding fields in that message.",
+          "citation": "rfc9112#6.3",
+          "coverage": 0.8571
+        },
+        {
+          "text": "In rfc9112#6.3, if a message contains both Transfer-Encoding and Content-Length, Transfer-Encoding overrides Content-Length.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, an intermediary that forwards a message containing both Transfer-Encoding and Content-Length must remove the received Content-Length field and process the Transfer-Encoding before forwarding the message downstream.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, if Transfer-Encoding is present and chunked is the final transfer coding, the message body length is determined by reading and decoding the chunked data until the transfer coding indicates completion.",
+          "citation": "rfc9112#6.3",
+          "coverage": 0.9375
+        },
+        {
+          "text": "In rfc9112#6.3, if Transfer-Encoding is present in a response and chunked is not the final transfer coding, the message body length is determined by reading the connection until the server closes it.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, if Transfer-Encoding is present in a request and chunked is not the final transfer coding, the message body length cannot be determined reliably and the server must respond with 400 Bad Request and close the connection.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, if a message has no Transfer-Encoding and has an invalid Content-Length, the message framing is invalid and the recipient must treat it as an unrecoverable error unless the field value is a comma-separated list whose values are all valid and identical.",
+          "citation": "rfc9112#6.3",
+          "coverage": 0.9444
+        },
+        {
+          "text": "In rfc9112#6.3, when an invalid Content-Length value can be parsed as a comma-separated list whose values are all valid and identical, the message is processed using that single value as the Content-Length value.",
+          "citation": "rfc9112#6.3",
+          "coverage": 0.8571
+        },
+        {
+          "text": "In rfc9112#6.3, if a valid Content-Length is present without Transfer-Encoding, its decimal value defines the expected message body length in octets.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, if the sender closes the connection or the recipient times out before the number of octets indicated by Content-Length is received, the recipient must consider the message incomplete and close the connection.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, if the message is otherwise a response without a declared message body length, the message body length is the number of octets received before the server closes the connection.",
+          "citation": "rfc9112#6.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "In rfc9112#6.3, request messages are never close-delimited because they are explicitly framed by length or transfer coding, and the absence of both means the request ends immediately after the header section.",
+          "citation": "rfc9112#6.3",
+          "coverage": 0.9444
+        }
+      ],
+      "withdrawn": [
+        {
+          "text": "In rfc9112#6.3, a recipient determines the length of an HTTP/1.1 message body by applying the specified rules in order of precedence.",
+          "citation": "rfc9112#6.3",
+          "rule": "coverage below floor",
+          "detail": "0.64 of the claim's content words appear in rfc9112#6.3, below the 0.67 floor",
+          "coverage": 0.6364
+        },
+        {
+          "text": "In rfc9112#6.3, if the message is a request and none of the preceding rules applies, the message body length is zero.",
+          "citation": "rfc9112#6.3",
+          "rule": "coverage below floor",
+          "detail": "0.67 of the claim's content words appear in rfc9112#6.3, below the 0.67 floor",
+          "coverage": 0.6667
+        }
+      ],
+      "consulted": [
+        {
+          "section_id": "rfc9112#6.3",
+          "citation": "RFC 9112 Section 6.3: Message Body Length",
+          "rank": 1,
+          "score": 0.7299
+        },
+        {
+          "section_id": "rfc9112#6",
+          "citation": "RFC 9112 Section 6: Message Body",
+          "rank": 4,
+          "score": 0.7035
+        },
+        {
+          "section_id": "rfc9110#2.3",
+          "citation": "RFC 9110 Section 2.3: Length Requirements",
+          "rank": 7,
+          "score": 0.641
+        },
+        {
+          "section_id": "rfc9110#8.6",
+          "citation": "RFC 9110 Section 8.6: Content-Length",
+          "rank": 8,
+          "score": 0.6306
+        },
+        {
+          "section_id": "rfc9112#2.1",
+          "citation": "RFC 9112 Section 2.1: Message Format",
+          "rank": 9,
+          "score": 0.6297
+        },
+        {
+          "section_id": "rfc9112#6.2",
+          "citation": "RFC 9112 Section 6.2: Content-Length",
+          "rank": 10,
+          "score": 0.6039
+        }
+      ],
+      "id": "q14",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": false,
+      "drift": []
+    },
+    {
+      "question": "How is the end of a chunked message body signalled?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "RFC 9112 Section 7.1 states that the chunked transfer coding is complete when a chunk with a chunk-size of zero is received, possibly followed by a trailer section, and finally terminated by an empty line. [rfc9112#7.1] RFC 9112 Section 8 states that a message body using the chunked transfer coding is incomplete if the zero-sized chunk that terminates the encoding has not been received. [rfc9112#8]",
+      "message": "",
+      "citations": [
+        "rfc9112#7.1",
+        "rfc9112#8"
+      ],
+      "supported": [
+        {
+          "text": "RFC 9112 Section 7.1 states that the chunked transfer coding is complete when a chunk with a chunk-size of zero is received, possibly followed by a trailer section, and finally terminated by an empty line.",
+          "citation": "rfc9112#7.1",
+          "coverage": 0.9412
+        },
+        {
+          "text": "RFC 9112 Section 8 states that a message body using the chunked transfer coding is incomplete if the zero-sized chunk that terminates the encoding has not been received.",
+          "citation": "rfc9112#8",
+          "coverage": 0.8462
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9112#7.1",
+          "citation": "RFC 9112 Section 7.1: Chunked Transfer Coding",
+          "rank": 1,
+          "score": 0.6284
+        },
+        {
+          "section_id": "rfc9112#6.3",
+          "citation": "RFC 9112 Section 6.3: Message Body Length",
+          "rank": 2,
+          "score": 0.5986
+        },
+        {
+          "section_id": "rfc9112#7.1.1",
+          "citation": "RFC 9112 Section 7.1.1: Chunk Extensions",
+          "rank": 3,
+          "score": 0.5984
+        },
+        {
+          "section_id": "rfc9112#8",
+          "citation": "RFC 9112 Section 8: Handling Incomplete Messages",
+          "rank": 5,
+          "score": 0.5519
+        },
+        {
+          "section_id": "rfc9112#7.1.3",
+          "citation": "RFC 9112 Section 7.1.3: Decoding Chunked",
+          "rank": 7,
+          "score": 0.5343
+        }
+      ],
+      "id": "q15",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "Which request-target form is used for a CONNECT request?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The authority-form of request-target is only used for CONNECT requests. [rfc9112#3.2.3] For CONNECT, the request target is the host name and port number of the tunnel destination, separated by a colon. [rfc9110#7.1]",
+      "message": "",
+      "citations": [
+        "rfc9112#3.2.3",
+        "rfc9110#7.1"
+      ],
+      "supported": [
+        {
+          "text": "The authority-form of request-target is only used for CONNECT requests.",
+          "citation": "rfc9112#3.2.3",
+          "coverage": 1.0
+        },
+        {
+          "text": "For CONNECT, the request target is the host name and port number of the tunnel destination, separated by a colon.",
+          "citation": "rfc9110#7.1",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#9.3.6",
+          "citation": "RFC 9110 Section 9.3.6: CONNECT",
+          "rank": 1,
+          "score": 0.6427
+        },
+        {
+          "section_id": "rfc9112#3.2.1",
+          "citation": "RFC 9112 Section 3.2.1: origin-form",
+          "rank": 2,
+          "score": 0.6178
+        },
+        {
+          "section_id": "rfc9112#3.2",
+          "citation": "RFC 9112 Section 3.2: Request Target",
+          "rank": 3,
+          "score": 0.6065
+        },
+        {
+          "section_id": "rfc9112#3.2.3",
+          "citation": "RFC 9112 Section 3.2.3: authority-form",
+          "rank": 4,
+          "score": 0.6048
+        },
+        {
+          "section_id": "rfc9110#7.1",
+          "citation": "RFC 9110 Section 7.1: Determining the Target Resource",
+          "rank": 5,
+          "score": 0.5912
+        },
+        {
+          "section_id": "rfc9112#3.2.4",
+          "citation": "RFC 9112 Section 3.2.4: asterisk-form",
+          "rank": 6,
+          "score": 0.5885
+        },
+        {
+          "section_id": "rfc9112#3.3",
+          "citation": "RFC 9112 Section 3.3: Reconstructing the Target URI",
+          "rank": 9,
+          "score": 0.5352
+        },
+        {
+          "section_id": "rfc9112#3.2.2",
+          "citation": "RFC 9112 Section 3.2.2: absolute-form",
+          "rank": 10,
+          "score": 0.5129
+        }
+      ],
+      "id": "q16",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What effect does the HttpOnly attribute have on a cookie?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The HttpOnly attribute limits the scope of the cookie to HTTP requests and instructs the user agent to omit the cookie when providing access to cookies via non-HTTP APIs such as browser APIs that expose cookies to scripts. [rfc6265#4.1.2.6] If a cookie was received from a non-HTTP API and the cookie's http-only-flag is set, the user agent aborts the storage steps and ignores the cookie entirely. [rfc6265#5.3] The HttpOnly attribute is independent of the Secure attribute, so a cookie can have both the HttpOnly and the Secure attribute. [rfc6265#4.1.2.6]",
+      "message": "",
+      "citations": [
+        "rfc6265#4.1.2.6",
+        "rfc6265#5.3"
+      ],
+      "supported": [
+        {
+          "text": "The HttpOnly attribute limits the scope of the cookie to HTTP requests and instructs the user agent to omit the cookie when providing access to cookies via non-HTTP APIs such as browser APIs that expose cookies to scripts.",
+          "citation": "rfc6265#4.1.2.6",
+          "coverage": 1.0
+        },
+        {
+          "text": "If a cookie was received from a non-HTTP API and the cookie's http-only-flag is set, the user agent aborts the storage steps and ignores the cookie entirely.",
+          "citation": "rfc6265#5.3",
+          "coverage": 0.6923
+        },
+        {
+          "text": "The HttpOnly attribute is independent of the Secure attribute, so a cookie can have both the HttpOnly and the Secure attribute.",
+          "citation": "rfc6265#4.1.2.6",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc6265#4.1.2.6",
+          "citation": "RFC 6265 Section 4.1.2.6: The HttpOnly Attribute",
+          "rank": 1,
+          "score": 0.8047
+        },
+        {
+          "section_id": "rfc6265#5.2.6",
+          "citation": "RFC 6265 Section 5.2.6: The HttpOnly Attribute",
+          "rank": 2,
+          "score": 0.7875
+        },
+        {
+          "section_id": "rfc6265#4.1.2.5",
+          "citation": "RFC 6265 Section 4.1.2.5: The Secure Attribute",
+          "rank": 3,
+          "score": 0.5658
+        },
+        {
+          "section_id": "rfc6265#3.1",
+          "citation": "RFC 6265 Section 3.1: Examples",
+          "rank": 4,
+          "score": 0.5606
+        },
+        {
+          "section_id": "rfc6265#8.6",
+          "citation": "RFC 6265 Section 8.6: Weak Integrity",
+          "rank": 5,
+          "score": 0.54
+        },
+        {
+          "section_id": "rfc6265#5.2.5",
+          "citation": "RFC 6265 Section 5.2.5: The Secure Attribute",
+          "rank": 6,
+          "score": 0.5388
+        },
+        {
+          "section_id": "rfc6265#5.3",
+          "citation": "RFC 6265 Section 5.3: Storage Model",
+          "rank": 7,
+          "score": 0.5354
+        },
+        {
+          "section_id": "rfc6265#5.4",
+          "citation": "RFC 6265 Section 5.4: The Cookie Header",
+          "rank": 8,
+          "score": 0.5278
+        },
+        {
+          "section_id": "rfc6265#8.5",
+          "citation": "RFC 6265 Section 8.5: Weak Confidentiality",
+          "rank": 9,
+          "score": 0.5263
+        }
+      ],
+      "id": "q17",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How is domain matching defined for cookies?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "A string domain-matches a given domain string if the domain string and the string are identical after canonicalization to lower case. [rfc6265#5.1.3] A string domain-matches a given domain string if the domain string is a suffix of the string, the last character of the string not included in the domain string is a %x2E (\u001c.\u001d) character, and the string is a host name rather than an IP address. [rfc6265#5.1.3]",
+      "message": "",
+      "citations": [
+        "rfc6265#5.1.3"
+      ],
+      "supported": [
+        {
+          "text": "A string domain-matches a given domain string if the domain string and the string are identical after canonicalization to lower case.",
+          "citation": "rfc6265#5.1.3",
+          "coverage": 0.7778
+        },
+        {
+          "text": "A string domain-matches a given domain string if the domain string is a suffix of the string, the last character of the string not included in the domain string is a %x2E (\u001c.\u001d) character, and the string is a host name rather than an IP address.",
+          "citation": "rfc6265#5.1.3",
+          "coverage": 0.9231
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc6265#4.1.2.3",
+          "citation": "RFC 6265 Section 4.1.2.3: The Domain Attribute",
+          "rank": 1,
+          "score": 0.6786
+        },
+        {
+          "section_id": "rfc6265#5.1.3",
+          "citation": "RFC 6265 Section 5.1.3: Domain Matching",
+          "rank": 2,
+          "score": 0.6418
+        },
+        {
+          "section_id": "rfc6265#5.2.3",
+          "citation": "RFC 6265 Section 5.2.3: The Domain Attribute",
+          "rank": 3,
+          "score": 0.637
+        },
+        {
+          "section_id": "rfc6265#5.3",
+          "citation": "RFC 6265 Section 5.3: Storage Model",
+          "rank": 4,
+          "score": 0.6082
+        },
+        {
+          "section_id": "rfc6265#5.1.4",
+          "citation": "RFC 6265 Section 5.1.4: Paths and Path-Match",
+          "rank": 6,
+          "score": 0.5937
+        },
+        {
+          "section_id": "rfc6265#4.2.2",
+          "citation": "RFC 6265 Section 4.2.2: Semantics",
+          "rank": 8,
+          "score": 0.5592
+        },
+        {
+          "section_id": "rfc6265#1",
+          "citation": "RFC 6265 Section 1: Introduction",
+          "rank": 9,
+          "score": 0.55
+        },
+        {
+          "section_id": "rfc6265#8.7",
+          "citation": "RFC 6265 Section 8.7: Reliance on DNS",
+          "rank": 10,
+          "score": 0.5448
+        }
+      ],
+      "id": "q18",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What minimum size per cookie should a user agent support?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "General-use user agents SHOULD provide a minimum capability of at least 4096 bytes per cookie, measured by the sum of the length of the cookie's name, value, and attributes. [rfc6265#6.1]",
+      "message": "",
+      "citations": [
+        "rfc6265#6.1"
+      ],
+      "supported": [
+        {
+          "text": "General-use user agents SHOULD provide a minimum capability of at least 4096 bytes per cookie, measured by the sum of the length of the cookie's name, value, and attributes.",
+          "citation": "rfc6265#6.1",
+          "coverage": 0.9412
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc6265#6.1",
+          "citation": "RFC 6265 Section 6.1: Limits",
+          "rank": 1,
+          "score": 0.7728
+        },
+        {
+          "section_id": "rfc6265#5",
+          "citation": "RFC 6265 Section 5: User Agent Requirements",
+          "rank": 2,
+          "score": 0.6672
+        },
+        {
+          "section_id": "rfc6265#1",
+          "citation": "RFC 6265 Section 1: Introduction",
+          "rank": 3,
+          "score": 0.5889
+        },
+        {
+          "section_id": "rfc6265#5.3",
+          "citation": "RFC 6265 Section 5.3: Storage Model",
+          "rank": 4,
+          "score": 0.5802
+        },
+        {
+          "section_id": "rfc6265#5.4",
+          "citation": "RFC 6265 Section 5.4: The Cookie Header",
+          "rank": 5,
+          "score": 0.5625
+        },
+        {
+          "section_id": "rfc6265#7.2",
+          "citation": "RFC 6265 Section 7.2: User Controls",
+          "rank": 6,
+          "score": 0.5617
+        },
+        {
+          "section_id": "rfc6265#3.1",
+          "citation": "RFC 6265 Section 3.1: Examples",
+          "rank": 8,
+          "score": 0.535
+        },
+        {
+          "section_id": "rfc6265#4.2.1",
+          "citation": "RFC 6265 Section 4.2.1: Syntax",
+          "rank": 9,
+          "score": 0.5242
+        },
+        {
+          "section_id": "rfc6265#4.1.2.2",
+          "citation": "RFC 6265 Section 4.1.2.2: The Max-Age Attribute",
+          "rank": 10,
+          "score": 0.5217
+        }
+      ],
+      "id": "q19",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What are the six structural characters in JSON?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "The six structural characters in JSON are left square bracket `[`, left curly bracket `{`, right square bracket `]`, right curly bracket `}`, colon `:`, and comma `,`. [rfc8259#2]",
+      "message": "",
+      "citations": [
+        "rfc8259#2"
+      ],
+      "supported": [
+        {
+          "text": "The six structural characters in JSON are left square bracket `[`, left curly bracket `{`, right square bracket `]`, right curly bracket `}`, colon `:`, and comma `,`.",
+          "citation": "rfc8259#2",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc8259#2",
+          "citation": "RFC 8259 Section 2: JSON Grammar",
+          "rank": 1,
+          "score": 0.592
+        },
+        {
+          "section_id": "rfc8259#1",
+          "citation": "RFC 8259 Section 1: Introduction",
+          "rank": 2,
+          "score": 0.545
+        },
+        {
+          "section_id": "rfc8259#1.3",
+          "citation": "RFC 8259 Section 1.3: Introduction to This Revision",
+          "rank": 3,
+          "score": 0.4915
+        },
+        {
+          "section_id": "rfc8259#13",
+          "citation": "RFC 8259 Section 13: Examples",
+          "rank": 4,
+          "score": 0.4851
+        },
+        {
+          "section_id": "rfc8259#4",
+          "citation": "RFC 8259 Section 4: Objects",
+          "rank": 5,
+          "score": 0.4806
+        },
+        {
+          "section_id": "rfc8259#14.2",
+          "citation": "RFC 8259 Section 14.2: Informative References",
+          "rank": 6,
+          "score": 0.4611
+        },
+        {
+          "section_id": "rfc8259#8.2",
+          "citation": "RFC 8259 Section 8.2: Unicode Characters",
+          "rank": 7,
+          "score": 0.4541
+        },
+        {
+          "section_id": "rfc8259#3",
+          "citation": "RFC 8259 Section 3: Values",
+          "rank": 8,
+          "score": 0.4539
+        },
+        {
+          "section_id": "rfc8259#8.1",
+          "citation": "RFC 8259 Section 8.1: Character Encoding",
+          "rank": 9,
+          "score": 0.4471
+        },
+        {
+          "section_id": "rfc8259#1.2",
+          "citation": "RFC 8259 Section 1.2: Specifications of JSON",
+          "rank": 10,
+          "score": 0.4441
+        }
+      ],
+      "id": "q20",
+      "answerable": true,
+      "expected_state": "grounded",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How does HTTP/2 multiplex multiple requests over a single TCP connection?",
+      "state": "grounded",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": "HTTP/2 introduced a multiplexed session layer on top of the existing TLS and TCP protocols for exchanging concurrent HTTP messages with efficient field compression and server push. [rfc9110#1.2]",
+      "message": "",
+      "citations": [
+        "rfc9110#1.2"
+      ],
+      "supported": [
+        {
+          "text": "HTTP/2 introduced a multiplexed session layer on top of the existing TLS and TCP protocols for exchanging concurrent HTTP messages with efficient field compression and server push.",
+          "citation": "rfc9110#1.2",
+          "coverage": 1.0
+        }
+      ],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#1.2",
+          "citation": "RFC 9110 Section 1.2: History and Evolution",
+          "rank": 1,
+          "score": 0.5479
+        },
+        {
+          "section_id": "rfc9112#9",
+          "citation": "RFC 9112 Section 9: Connection Management",
+          "rank": 2,
+          "score": 0.5221
+        },
+        {
+          "section_id": "rfc9112#9.4",
+          "citation": "RFC 9112 Section 9.4: Concurrency",
+          "rank": 4,
+          "score": 0.5065
+        },
+        {
+          "section_id": "rfc9112#9.3.2",
+          "citation": "RFC 9112 Section 9.3.2: Pipelining",
+          "rank": 5,
+          "score": 0.5005
+        },
+        {
+          "section_id": "rfc9110#3.3",
+          "citation": "RFC 9110 Section 3.3: Connections, Clients, and Servers",
+          "rank": 6,
+          "score": 0.4815
+        },
+        {
+          "section_id": "rfc9112#9.7",
+          "citation": "RFC 9112 Section 9.7: TLS Connection Initiation",
+          "rank": 7,
+          "score": 0.45
+        },
+        {
+          "section_id": "rfc9112#9.1",
+          "citation": "RFC 9112 Section 9.1: Establishment",
+          "rank": 8,
+          "score": 0.4472
+        },
+        {
+          "section_id": "rfc9110#1.1",
+          "citation": "RFC 9110 Section 1.1: Purpose",
+          "rank": 9,
+          "score": 0.4443
+        },
+        {
+          "section_id": "rfc9112#9.3",
+          "citation": "RFC 9112 Section 9.3: Persistence",
+          "rank": 10,
+          "score": 0.4388
+        }
+      ],
+      "id": "u01",
+      "answerable": false,
+      "expected_state": "partial",
+      "agrees": false,
+      "drift": []
+    },
+    {
+      "question": "What fields does an HTTP/2 HEADERS frame contain?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#5",
+          "citation": "RFC 9110 Section 5: Fields",
+          "rank": 1,
+          "score": 0.6044
+        },
+        {
+          "section_id": "rfc9110#6.3",
+          "citation": "RFC 9110 Section 6.3: Header Fields",
+          "rank": 2,
+          "score": 0.5836
+        },
+        {
+          "section_id": "rfc9110#9.3.2",
+          "citation": "RFC 9110 Section 9.3.2: HEAD",
+          "rank": 3,
+          "score": 0.5754
+        },
+        {
+          "section_id": "rfc9110#B.2",
+          "citation": "RFC 9110 Section B.2: Changes from RFC 7230",
+          "rank": 4,
+          "score": 0.5506
+        },
+        {
+          "section_id": "rfc9110#B.3",
+          "citation": "RFC 9110 Section B.3: Changes from RFC 7231",
+          "rank": 5,
+          "score": 0.5385
+        },
+        {
+          "section_id": "rfc9110#6",
+          "citation": "RFC 9110 Section 6: Message Abstraction",
+          "rank": 6,
+          "score": 0.5315
+        },
+        {
+          "section_id": "rfc9110#19.2",
+          "citation": "RFC 9110 Section 19.2: Informative References",
+          "rank": 7,
+          "score": 0.5243
+        },
+        {
+          "section_id": "rfc9110#6.1",
+          "citation": "RFC 9110 Section 6.1: Framing and Completeness",
+          "rank": 8,
+          "score": 0.5231
+        },
+        {
+          "section_id": "rfc9110#5.1",
+          "citation": "RFC 9110 Section 5.1: Field Names",
+          "rank": 9,
+          "score": 0.5229
+        }
+      ],
+      "id": "u02",
+      "answerable": false,
+      "expected_state": "unsupported",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How does the SameSite cookie attribute restrict cross-site requests?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc6265#4.1.2.6",
+          "citation": "RFC 6265 Section 4.1.2.6: The HttpOnly Attribute",
+          "rank": 1,
+          "score": 0.5126
+        },
+        {
+          "section_id": "rfc6265#4.1.2.3",
+          "citation": "RFC 6265 Section 4.1.2.3: The Domain Attribute",
+          "rank": 2,
+          "score": 0.504
+        },
+        {
+          "section_id": "rfc6265#5.2.6",
+          "citation": "RFC 6265 Section 5.2.6: The HttpOnly Attribute",
+          "rank": 3,
+          "score": 0.5026
+        },
+        {
+          "section_id": "rfc6265#3.1",
+          "citation": "RFC 6265 Section 3.1: Examples",
+          "rank": 4,
+          "score": 0.4997
+        },
+        {
+          "section_id": "rfc6265#8.6",
+          "citation": "RFC 6265 Section 8.6: Weak Integrity",
+          "rank": 5,
+          "score": 0.4927
+        },
+        {
+          "section_id": "rfc6265#7.1",
+          "citation": "RFC 6265 Section 7.1: Third-Party Cookies",
+          "rank": 7,
+          "score": 0.4889
+        },
+        {
+          "section_id": "rfc6265#4.1.2.5",
+          "citation": "RFC 6265 Section 4.1.2.5: The Secure Attribute",
+          "rank": 8,
+          "score": 0.4869
+        },
+        {
+          "section_id": "rfc6265#4.1.2.4",
+          "citation": "RFC 6265 Section 4.1.2.4: The Path Attribute",
+          "rank": 9,
+          "score": 0.4743
+        },
+        {
+          "section_id": "rfc6265#8.5",
+          "citation": "RFC 6265 Section 8.5: Weak Confidentiality",
+          "rank": 10,
+          "score": 0.4698
+        }
+      ],
+      "id": "u03",
+      "answerable": false,
+      "expected_state": "partial",
+      "agrees": false,
+      "drift": []
+    },
+    {
+      "question": "What grant types does OAuth 2.0 define?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#11.1",
+          "citation": "RFC 9110 Section 11.1: Authentication Scheme",
+          "rank": 1,
+          "score": 0.3751
+        },
+        {
+          "section_id": "rfc9110#19.2",
+          "citation": "RFC 9110 Section 19.2: Informative References",
+          "rank": 2,
+          "score": 0.3648
+        },
+        {
+          "section_id": "rfc9110#9.1",
+          "citation": "RFC 9110 Section 9.1: Overview",
+          "rank": 3,
+          "score": 0.3639
+        },
+        {
+          "section_id": "rfc9110#16.4.2",
+          "citation": "RFC 9110 Section 16.4.2: Considerations for New Authentication Schemes",
+          "rank": 4,
+          "score": 0.3533
+        },
+        {
+          "section_id": "rfc9110#18.10",
+          "citation": "RFC 9110 Section 18.10: Upgrade Token Registration",
+          "rank": 7,
+          "score": 0.3482
+        },
+        {
+          "section_id": "rfc9110#16",
+          "citation": "RFC 9110 Section 16: Extending HTTP",
+          "rank": 8,
+          "score": 0.3458
+        },
+        {
+          "section_id": "rfc9112#3.1",
+          "citation": "RFC 9112 Section 3.1: Method",
+          "rank": 9,
+          "score": 0.3444
+        }
+      ],
+      "id": "u04",
+      "answerable": false,
+      "expected_state": "unsupported",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "How is the signature of a JSON Web Token computed?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc8259#2",
+          "citation": "RFC 8259 Section 2: JSON Grammar",
+          "rank": 1,
+          "score": 0.393
+        },
+        {
+          "section_id": "rfc9110#5.6.2",
+          "citation": "RFC 9110 Section 5.6.2: Tokens",
+          "rank": 2,
+          "score": 0.3764
+        },
+        {
+          "section_id": "rfc8259#13",
+          "citation": "RFC 8259 Section 13: Examples",
+          "rank": 3,
+          "score": 0.3651
+        },
+        {
+          "section_id": "rfc9110#11.2",
+          "citation": "RFC 9110 Section 11.2: Authentication Parameters",
+          "rank": 4,
+          "score": 0.362
+        },
+        {
+          "section_id": "rfc8259#10",
+          "citation": "RFC 8259 Section 10: Generators",
+          "rank": 5,
+          "score": 0.3569
+        },
+        {
+          "section_id": "rfc8259#11",
+          "citation": "RFC 8259 Section 11: IANA Considerations",
+          "rank": 6,
+          "score": 0.3493
+        },
+        {
+          "section_id": "rfc8259#1.2",
+          "citation": "RFC 8259 Section 1.2: Specifications of JSON",
+          "rank": 7,
+          "score": 0.3462
+        },
+        {
+          "section_id": "rfc8259#14.1",
+          "citation": "RFC 8259 Section 14.1: Normative References",
+          "rank": 8,
+          "score": 0.3441
+        },
+        {
+          "section_id": "rfc8259#12",
+          "citation": "RFC 8259 Section 12: Security Considerations",
+          "rank": 9,
+          "score": 0.3441
+        },
+        {
+          "section_id": "rfc8259#14.2",
+          "citation": "RFC 8259 Section 14.2: Informative References",
+          "rank": 10,
+          "score": 0.3399
+        }
+      ],
+      "id": "u05",
+      "answerable": false,
+      "expected_state": "unsupported",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What resource records does a DNS server return for an A-record query?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc3986#10.2",
+          "citation": "RFC 3986 Section 10.2: Informative References",
+          "rank": 1,
+          "score": 0.4067
+        },
+        {
+          "section_id": "rfc9110#3.1",
+          "citation": "RFC 9110 Section 3.1: Resources",
+          "rank": 2,
+          "score": 0.3989
+        },
+        {
+          "section_id": "rfc9110#15.4.4",
+          "citation": "RFC 9110 Section 15.4.4: 303 See Other",
+          "rank": 3,
+          "score": 0.3966
+        },
+        {
+          "section_id": "rfc3986#3.2.2",
+          "citation": "RFC 3986 Section 3.2.2: Host",
+          "rank": 4,
+          "score": 0.3954
+        },
+        {
+          "section_id": "rfc3986#D.2",
+          "citation": "RFC 3986 Section D.2: Modifications",
+          "rank": 5,
+          "score": 0.3886
+        },
+        {
+          "section_id": "rfc9110#19.2",
+          "citation": "RFC 9110 Section 19.2: Informative References",
+          "rank": 6,
+          "score": 0.3849
+        },
+        {
+          "section_id": "rfc9110#7.1",
+          "citation": "RFC 9110 Section 7.1: Determining the Target Resource",
+          "rank": 7,
+          "score": 0.3828
+        },
+        {
+          "section_id": "rfc3986#1.2.2",
+          "citation": "RFC 3986 Section 1.2.2: Separating Identification from Interaction",
+          "rank": 8,
+          "score": 0.381
+        },
+        {
+          "section_id": "rfc3986#1.1",
+          "citation": "RFC 3986 Section 1.1: Overview of URIs",
+          "rank": 10,
+          "score": 0.3771
+        }
+      ],
+      "id": "u06",
+      "answerable": false,
+      "expected_state": "unsupported",
+      "agrees": true,
+      "drift": []
+    },
+    {
+      "question": "What is the message sequence of the TLS 1.3 handshake?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9112#9.7",
+          "citation": "RFC 9112 Section 9.7: TLS Connection Initiation",
+          "rank": 1,
+          "score": 0.5129
+        },
+        {
+          "section_id": "rfc9110#1.2",
+          "citation": "RFC 9110 Section 1.2: History and Evolution",
+          "rank": 2,
+          "score": 0.5083
+        },
+        {
+          "section_id": "rfc9112#2",
+          "citation": "RFC 9112 Section 2: Message",
+          "rank": 3,
+          "score": 0.45
+        },
+        {
+          "section_id": "rfc9112#9.8",
+          "citation": "RFC 9112 Section 9.8: TLS Connection Closure",
+          "rank": 4,
+          "score": 0.4384
+        },
+        {
+          "section_id": "rfc9112#11.3",
+          "citation": "RFC 9112 Section 11.3: Message Integrity",
+          "rank": 5,
+          "score": 0.4375
+        },
+        {
+          "section_id": "rfc9110#6",
+          "citation": "RFC 9110 Section 6: Message Abstraction",
+          "rank": 7,
+          "score": 0.4222
+        },
+        {
+          "section_id": "rfc9112#12.4",
+          "citation": "RFC 9112 Section 12.4: ALPN Protocol ID Registration",
+          "rank": 9,
+          "score": 0.4197
+        },
+        {
+          "section_id": "rfc9112#13.1",
+          "citation": "RFC 9112 Section 13.1: Normative References",
+          "rank": 10,
+          "score": 0.4161
+        }
+      ],
+      "id": "u07",
+      "answerable": false,
+      "expected_state": "partial",
+      "agrees": false,
+      "drift": []
+    },
+    {
+      "question": "How does a browser decide whether to send a CORS preflight request?",
+      "state": "unsupported",
+      "http_status": 200,
+      "index_version": "0fc1763d6701",
+      "answer": null,
+      "message": "This corpus does not answer that question. Nothing drafted from the passages below could be traced back to them, so no answer is given.",
+      "citations": [],
+      "supported": [],
+      "withdrawn": [],
+      "consulted": [
+        {
+          "section_id": "rfc9110#13.2.1",
+          "citation": "RFC 9110 Section 13.2.1: When to Evaluate",
+          "rank": 1,
+          "score": 0.4949
+        },
+        {
+          "section_id": "rfc9110#13",
+          "citation": "RFC 9110 Section 13: Conditional Requests",
+          "rank": 2,
+          "score": 0.4708
+        },
+        {
+          "section_id": "rfc9110#13.2.2",
+          "citation": "RFC 9110 Section 13.2.2: Precedence of Preconditions",
+          "rank": 3,
+          "score": 0.4702
+        },
+        {
+          "section_id": "rfc9111#4.3.2",
+          "citation": "RFC 9111 Section 4.3.2: Handling a Received Validation Request",
+          "rank": 4,
+          "score": 0.4635
+        },
+        {
+          "section_id": "rfc9111#4.3.1",
+          "citation": "RFC 9111 Section 4.3.1: Sending a Validation Request",
+          "rank": 7,
+          "score": 0.4415
+        },
+        {
+          "section_id": "rfc9110#12.1",
+          "citation": "RFC 9110 Section 12.1: Proactive Negotiation",
+          "rank": 8,
+          "score": 0.4333
+        },
+        {
+          "section_id": "rfc9110#7.3.2",
+          "citation": "RFC 9110 Section 7.3.2: To a Proxy",
+          "rank": 9,
+          "score": 0.4175
+        },
+        {
+          "section_id": "rfc9110#13.1",
+          "citation": "RFC 9110 Section 13.1: Preconditions",
+          "rank": 10,
+          "score": 0.417
+        }
+      ],
+      "id": "u08",
+      "answerable": false,
+      "expected_state": "unsupported",
+      "agrees": true,
+      "drift": []
+    }
+  ]
+}

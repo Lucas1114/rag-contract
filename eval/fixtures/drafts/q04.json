@@ -1,0 +1,22 @@
+{
+  "question_id": "q04",
+  "question": "Which HTTP request methods are defined as safe?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:00Z",
+  "passages": [
+    "rfc9110#9.2.1",
+    "rfc9110#9.2.2",
+    "rfc9110#18.2",
+    "rfc9110#16.1.1",
+    "rfc9110#9.1",
+    "rfc9110#16.1.2",
+    "rfc9110#4.2"
+  ],
+  "claims": [
+    {
+      "text": "The GET, HEAD, OPTIONS, and TRACE methods are defined to be safe.",
+      "citation": "rfc9110#9.2.1"
+    }
+  ]
+}

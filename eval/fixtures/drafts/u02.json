@@ -1,0 +1,19 @@
+{
+  "question_id": "u02",
+  "question": "What fields does an HTTP/2 HEADERS frame contain?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:50:12Z",
+  "passages": [
+    "rfc9110#5",
+    "rfc9110#6.3",
+    "rfc9110#9.3.2",
+    "rfc9110#B.2",
+    "rfc9110#B.3",
+    "rfc9110#6",
+    "rfc9110#19.2",
+    "rfc9110#6.1",
+    "rfc9110#5.1"
+  ],
+  "claims": []
+}

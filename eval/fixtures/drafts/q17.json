@@ -1,0 +1,32 @@
+{
+  "question_id": "q17",
+  "question": "What effect does the HttpOnly attribute have on a cookie?",
+  "model": "gpt-5.5-2026-04-23",
+  "index_version": "0fc1763d6701",
+  "recorded_at": "2026-09-12T13:49:59Z",
+  "passages": [
+    "rfc6265#4.1.2.6",
+    "rfc6265#5.2.6",
+    "rfc6265#4.1.2.5",
+    "rfc6265#3.1",
+    "rfc6265#8.6",
+    "rfc6265#5.2.5",
+    "rfc6265#5.3",
+    "rfc6265#5.4",
+    "rfc6265#8.5"
+  ],
+  "claims": [
+    {
+      "text": "The HttpOnly attribute limits the scope of the cookie to HTTP requests and instructs the user agent to omit the cookie when providing access to cookies via non-HTTP APIs such as browser APIs that expose cookies to scripts.",
+      "citation": "rfc6265#4.1.2.6"
+    },
+    {
+      "text": "If a cookie was received from a non-HTTP API and the cookie's http-only-flag is set, the user agent aborts the storage steps and ignores the cookie entirely.",
+      "citation": "rfc6265#5.3"
+    },
+    {
+      "text": "The HttpOnly attribute is independent of the Secure attribute, so a cookie can have both the HttpOnly and the Secure attribute.",
+      "citation": "rfc6265#4.1.2.6"
+    }
+  ]
+}
