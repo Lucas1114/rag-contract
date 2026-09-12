@@ -187,7 +187,7 @@ budget:
   max_build_index_usd: 0.02
 
   # The same idea for record-drafts, priced from the committed prompts and the
-  # committed drafts: $0.6609. That is a floor rather than an estimate — the
+  # committed drafts: $0.6621. That is a floor rather than an estimate — the
   # fixtures hold the text the model returned and cannot hold the reasoning
   # tokens it was also billed for — and the real invoice for that run was $0.57,
   # lower because the token estimator over-estimates by about 1.44x. The ceiling

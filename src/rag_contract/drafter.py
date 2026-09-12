@@ -86,10 +86,12 @@ TIMEOUT_SECONDS = 180
 # tokens is $3.36 at $30/1M, and with input that is $3.90 against a $2.00 daily
 # cap. The cap would have refused to authorise a full run.
 #
-# 1500 is sized from what drafting this question set measurably uses. The
-# recorded run billed roughly 220 output tokens per question including reasoning
-# tokens, which count against this ceiling; 1500 is nearly seven times that and
-# brings the worst case to $1.80, inside the cap with room left.
+# 1500 is sized from the invoice rather than from a guess, by backing the output
+# side out of it: the recorded run billed $0.57 in total against 75,250 input
+# tokens, so at $5/1M in and $30/1M out the output side is about 6,500 tokens
+# across 29 requests — roughly 220 a question, reasoning tokens included, since
+# those are billed as output and count against this same ceiling. 1500 is nearly
+# seven times that, and brings the worst case to $1.80, inside the cap.
 #
 # Cutting it is safe because truncation here is loud rather than silent:
 # `LiveDrafter.draft` refuses any response whose `finish_reason` is not `stop`,

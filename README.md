@@ -17,7 +17,7 @@ are enforced rather than logged.
 | 2 | Quality regressions fail the build | The threshold is committed to `eval/thresholds.yaml`. CI runs the eval and fails below it. Threshold changes are visible in diffs. |
 | 3 | The service refuses rather than invents | Every answer is a list of claims, each naming the passage that supports it, and a grounding check decides per claim whether that passage actually contains it. Three distinct failure states follow from that check, with three distinct responses. |
 | 4 | Every answer is attributable to an index version | Index versions are content-addressed and returned in response metadata. A corpus change fails the build until the index is rebuilt, and a cutover does not drop requests in flight or move them onto the new index. |
-| 5 | Latency and cost are ceilings, not advice | Per-request latency and token/cost ceilings change behaviour when exceeded rather than merely recording it. Both are reported per request. |
+| 5 | Latency and cost are ceilings, not advice | A served request runs under a deadline and is abandoned rather than answered when it spends it. The two commands that call an API ask a committed daily cap before every call and stop rather than break it. Both ceilings are in `eval/thresholds.yaml` and both are checked by the gate. |
 
 ## Status
 
@@ -31,7 +31,7 @@ data or CI results support it.
 | 2. CI regression gate | verified |
 | 3. Failure behaviour | verified |
 | 4. Index lifecycle | verified |
-| 5. Budgets | specified |
+| 5. Budgets | verified |
 
 ## Corpus
 
@@ -100,7 +100,8 @@ No chunk spans a section, so every hit reports the section it came from.
     rag-contract eval           score against eval/questions.yaml      no network
     rag-contract eval-answers   score the failure behaviour            no network
     rag-contract answer         answer one question, showing its state no network
-    rag-contract gate           hold both evals to eval/thresholds.yaml no network
+    rag-contract gate           hold both evals, index freshness and the
+                                budgets to eval/thresholds.yaml           no network
 
 `eval` is deterministic numpy over committed vectors. Same index, same
 questions, same numbers, on any machine — which is the property the CI gate in
@@ -406,6 +407,14 @@ something the service decided; `no_context` is 503, because nothing was
 consulted. `X-Index-Version` carries the version independently of the body,
 which matters precisely where the body has no answer in it.
 
+Every `/answer` response also carries `budget` — the deadline it was held to,
+what it spent, and the breakdown by stage. Reporting it on the responses that
+carry no answer is the part that matters: a request abandoned for spending its
+budget has to say which stage spent it, or an operator is left with a 503 and a
+guess. That response is not an answer state at all. It carries `error`,
+`detail`, `index_version` and `budget`, and no `state` — the grounding check did
+not finish, so the service has no verdict about the corpus to report.
+
 A question id outside the fixed set is a 404. There is no free-text endpoint,
 and that constraint is what lets the answer step replay a committed draft
 rather than calling a model on the request path.
@@ -418,6 +427,121 @@ The handlers translate and decide nothing — the state, the status code and the
 version are all settled before one runs. A rule expressed in a handler would be
 a rule the eval harness cannot measure, because the eval does not speak HTTP.
 
+## Budgets
+
+### What a latency ceiling here can honestly protect
+
+The obvious answer is retrieval, and measuring says it is wrong. Per stage,
+over the served request path:
+
+| stage | median | worst | varies with |
+|-------|--------|-------|-------------|
+| retrieval | 0.026 ms | 0.026 ms | nothing — flat across all 28 questions |
+| collapsing hits to passages | 0.004 ms | 0.005 ms | nothing |
+| grounding check | 0.162 ms | **7.400 ms** | claims x cited passage size |
+
+Retrieval is one matrix-vector product over 868 chunks and there is no question
+this corpus makes slow. The answer step replays a committed fixture and is a
+dictionary lookup. The request is spent almost entirely in the grounding check
+— the one part of the pipeline this project added — because `check_claim`
+tokenises the whole cited passage once per claim, twice over.
+
+The corpus bounds one side of that: ten retrieved sections, 13k characters at
+worst. Nothing bounds the other. **The number of claims comes from the model**,
+not from the corpus, the question set or the request, and it is the only input
+on the request path the service does not control. That is what the ceiling is
+for. It is not a slow path invented so that there would be something to guard;
+it is the one place where an input the service does not own multiplies work the
+service does.
+
+### Exceeding it abandons the request
+
+The tempting behaviour is to stop checking and answer from the claims checked so
+far, and it is exactly wrong — for guarantee 3's reasons rather than guarantee
+5's. Claims the check never reached are not claims that passed. An answer
+assembled from a truncated grounding check would report `grounded` or `partial`
+on the strength of claims nobody verified, which is the precise failure the
+grounding check exists to prevent. A partially applied check is not a weaker
+check, it is an unsound one.
+
+So the deadline is checked *inside* the per-claim loop and raises out of it.
+There is no half-checked verdict list for a later stage to be tempted by, and
+the response says the request was abandoned rather than answered.
+
+It is deliberately not a member of `AnswerState`. `decide` never returns it,
+because reaching it means `decide` never finished — the service has no verdict
+about the corpus to report, only what it spent getting nowhere. A service error
+like `no_context`, and a 503 for the same reason.
+
+    request_deadline_ms: 150.0   what the service enforces per request
+    max_request_ms:       50.0   the bar the gate holds the measured request to
+
+Two numbers, because one would not do. The gate sees the index every build is
+made against and fails before a deployment where the ceiling would fire; it
+cannot see an index installed at runtime through `registry.install`, which the
+cutover machinery can be handed anything. The per-request deadline is the
+backstop for exactly that, and is the only one of the two a served request ever
+reaches. `budget.py` refuses the threshold file when the gate's bar is not at
+most half the deadline — a bar at the deadline is the deadline with extra steps,
+and would leave the build green on the last commit before requests start being
+abandoned.
+
+Nothing served today comes close to either. The tests therefore drive an
+injected clock rather than the workload: making the deadline fire by sleeping
+would test `time.sleep`, and making it fire with real work would mean adding a
+slow path to the service to have something to catch.
+
+### The cost ceiling has one real consumer
+
+Nothing on the request path spends money — committed vectors, committed drafts,
+no key — so a token ceiling there would be a ceiling on zero. The spend is in
+the two commands that are run by hand, and it is small and now known:
+
+| command | priced from committed artefacts | actually billed |
+|---------|-------------------------------|-----------------|
+| `build-index` | $0.0059 — 293,131 tokens at $0.02/1M | — |
+| `record-drafts` | $0.6621 floor | **$0.57**, 29 requests, 2026-09-12 |
+
+The cap is asked *before* every call and refuses the ones that would break it,
+because a cap that notices afterwards is a report. That needs an upper bound on
+a call before making it, which sounds impossible for a completion and is not:
+embeddings cost a function of text already on disk, and a completion is bounded
+because the request itself sets `max_completion_tokens`, which reasoning tokens
+count against. The ledger then records reported usage, so the running total is
+real spend rather than accumulated worst cases.
+
+`.env.example` carried `DAILY_SPEND_CAP_USD=2.00` and nothing read it. Wiring it
+up where it stood was the obvious fix and the wrong one — a cap set by whoever
+runs the command is invisible in review and different on every machine. It is
+`budget.daily_cap_usd` in `eval/thresholds.yaml` now, with no environment
+override, so raising it is a diff like every other bar here.
+
+### What pricing the commands found
+
+`drafter.MAX_TOKENS` was 4000, a generous default with no reason behind it.
+Priced: 28 questions at 4000 output tokens is $3.36 at $30/1M, $3.90 with input,
+against a $2.00 cap. **The cap would have refused to authorise the run it exists
+to permit.** Two numbers in two files, set by different people for different
+reasons, that nothing had ever compared.
+
+It is 1500 now, which brings the worst case to $1.80. The size comes from
+backing the output side out of the invoice rather than from guessing: the run
+billed $0.57 in total and 75,250 input tokens, so at $5/1M input and $30/1M
+output the output side is about 6,500 tokens across 29 requests — roughly 220 a
+question, reasoning tokens included, since those are billed as output and count
+against this same ceiling. A ceiling of 1500 is nearly seven times that. Cutting it is safe because truncation here
+is loud rather than silent: `LiveDrafter` refuses any response that did not
+finish on `stop`, so a draft needing more room fails the command instead of
+committing a half-written fixture. `MAX_TOKENS` stays out of the prompt
+fingerprint, because it cannot change what was asked, only truncate — so the
+committed drafts did not have to be bought again to lower it.
+
+The token estimator is left deliberately over-estimating, and this is where that
+got checked rather than asserted: it scores 108,693 input tokens for a run the
+invoice billed at 75,250, a factor of 1.44. Every priced figure above is
+therefore conservative, which is the only safe direction for a cap — one built
+on an optimistic estimate authorises the call that breaks it.
+
 ## Regression gate
 
 `eval/thresholds.yaml` is the committed bar. `rag-contract gate` reruns both
@@ -425,9 +549,10 @@ evals and exits non-zero below it; CI runs that on every push and pull request.
 The gate holds no numbers of its own, so lowering the bar is an edit to that
 file and appears in the diff of the commit that does it.
 
-It applies four independent kinds of check — the two below, plus the refusal
-thresholds described under failure behaviour above, plus the index freshness
-check described under index lifecycle. Thirty checks in total on this commit.
+It applies five independent kinds of check — the two below, plus the refusal
+thresholds described under failure behaviour above, the index freshness check
+described under index lifecycle, and the budgets described above. Thirty-two
+checks in total on this commit, thirty-four with `--check-report`.
 
 **Aggregate floors** on recall@1, recall@5, recall@10 and MRR. Each sits below
 the measured value with deliberate headroom: with 20 answerable questions one
@@ -455,6 +580,23 @@ Every answerable question must carry a ceiling and no others may. Adding a
 question without recording what it costs fails the gate, which forces the new
 question into the same diff as its bar.
 
+**Four budget checks**, described above: the slowest measured request against
+the bar under the served deadline, the priced cost of a rebuild and of a
+re-record against their ceilings, and the worst-case drafting run against the
+day's cap.
+
+The latency one is the first check in this gate that is not deterministic, and
+that is worth stating rather than burying. Every other number here is numpy over
+committed vectors and comes out identical on any machine, which is the property
+the whole project rests on; a wall clock does not. So its bar is sized for an
+order of magnitude — 7.4 ms measured, perhaps three times that on a loaded
+runner, against a 50 ms bar — and not for a measurement. It earns its place
+because the regression it catches is also an order of magnitude: the request
+path acquiring work that scales with something nothing bounds. The two priced
+checks are arithmetic over committed text and cost nothing to run; a further
+test asserts the gate leaves the spend ledger untouched, since it prices an API
+call and holds the cap that refuses one.
+
 The eight unanswerable questions carry no rank ceiling and no score band. Their
 score distribution overlaps the answerable one, as measured above, so a band
 here would encode a boundary the data says does not exist. What holds them is
@@ -475,7 +617,10 @@ checks, naming RFC 9110's definition of CONNECT as what outranks q16's expected
 section. Tightening `max_answered_unanswerable` to 0 and `min_grounded_rate` to
 0.95 turns it red on both refusal checks, naming u01. Editing a line into
 `corpus/rfc8259.txt` turns it red on freshness alone, with every quality check
-still green. A gate that has only ever been green is decoration.
+still green. Restoring `MAX_TOKENS` to 4000 turns it red on worst-case drafting
+alone, at $3.9035 against the $2.00 cap; tightening the latency bar to 1 ms
+names q14; tightening the rebuild ceiling below the corpus names `build-index`.
+A gate that has only ever been green is decoration.
 
 ## Running it
 
@@ -500,18 +645,28 @@ No key, no network: the answer replays a committed draft and reruns retrieval,
 the grounding check and the state machine against the committed index.
 
 The eval needs no API key: the vectors are committed. Rebuilding the index does,
-and is the only step that calls an external service:
+and is one of exactly two steps that call an external service:
 
 ```
 cp .env.example .env    # then set OPENAI_API_KEY
 uv run rag-contract build-index
 ```
 
+Both of those steps run under the daily spend cap in `eval/thresholds.yaml`.
+The cap is asked before every call and refuses the ones that would break it, so
+a command that runs out of budget stops with nothing written rather than
+finishing and reporting what it cost. Spend is recorded to a local, gitignored
+ledger; nothing about it is committed, because it is machine state rather than a
+property of the repository.
+
 ## Design decisions
 
 **No vector database.** At this corpus size, brute-force cosine similarity over
-numpy is the correct choice and stays far below the latency ceiling. A vector
-store would add a component to version and operate for no measurable benefit.
+numpy is the correct choice, and this is now measured rather than assumed: 0.026
+ms per query, flat across all 28 questions, against a 150 ms request deadline. A
+vector store would add a component to version and operate for no measurable
+benefit. The measurement also settled where the request's time actually goes,
+which was not where this section used to imply — see Budgets.
 
 **Embedding vectors are committed.** The corpus is fixed, so the vectors are a
 deterministic build artifact. Committing them means the retrieval eval runs in
@@ -521,7 +676,8 @@ CI with no network calls, no cost, and reproducible results.
 Answer-level evaluation replays the drafts committed under `eval/fixtures/`.
 Exactly two commands call an external service — `build-index` and
 `record-drafts` — both are run by hand, and both commit what they produce. One
-API key covers both.
+API key covers both, and one committed daily cap refuses either of them a call
+it cannot afford.
 
 **A fixture freezes the model's output and nothing else.** Retrieval, the
 grounding check and the state machine rerun on every replay against the live
