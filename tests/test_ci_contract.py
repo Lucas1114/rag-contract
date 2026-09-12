@@ -20,12 +20,15 @@ from rag_contract.index import load_index
 
 NETWORK_MODULES = ("httpx", "requests", "urllib3", "openai", "anthropic")
 
-# Everything the gate pulls in. `embedding` is deliberately absent: it is
-# imported inside `cmd_build_index`, not at module scope, which is what keeps
-# the network client out of this graph.
+# Everything the gate pulls in. `embedding` is deliberately absent, and
+# `drafter` is present but must stay clean: both network clients are imported
+# inside the function that calls them — `cmd_build_index` and
+# `LiveDrafter.draft` — rather than at module scope, which is what keeps them
+# out of this graph.
 GATE_IMPORT = (
     "from rag_contract import "
-    "answering, cli, evaluate, evalset, gate, grounding, index, retrieval"
+    "answer_eval, answering, cli, drafter, evaluate, evalset, gate, "
+    "grounding, index, retrieval"
 )
 
 

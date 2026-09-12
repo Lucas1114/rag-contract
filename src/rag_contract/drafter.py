@@ -41,6 +41,7 @@ check is the verifying.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -50,6 +51,8 @@ from .answering import Passage
 from .grounding import Claim
 
 FIXTURES_DIR = Path(__file__).resolve().parents[2] / "eval" / "fixtures" / "drafts"
+_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+_KEY_NAME = "ANTHROPIC_API_KEY"
 
 MODEL = "claude-opus-5"
 MAX_TOKENS = 4000
@@ -70,6 +73,28 @@ background that the passages do not contain.\
 
 class DrafterError(RuntimeError):
     """A draft could not be produced or replayed."""
+
+
+def _api_key() -> str:
+    """The answer key, read the same way the embedding key is.
+
+    Deliberately duplicated rather than shared: each network-calling module
+    owns its own credential, so the import graph that proves the gate reaches
+    no HTTP client also proves it reaches no key.
+    """
+    key = os.environ.get(_KEY_NAME, "").strip()
+    if not key and _ENV_PATH.is_file():
+        for line in _ENV_PATH.read_text().splitlines():
+            name, _, value = line.partition("=")
+            if name.strip() == _KEY_NAME:
+                key = value.strip()
+                break
+    if not key:
+        raise DrafterError(
+            f"{_KEY_NAME} is not set. Drafts are recorded once and committed; "
+            "the answer eval replays those fixtures and needs no key."
+        )
+    return key
 
 
 class Drafter(Protocol):
@@ -105,7 +130,7 @@ class LiveDrafter:
         class DraftedAnswer(BaseModel):
             claims: list[DraftedClaim]
 
-        response = anthropic.Anthropic().messages.parse(
+        response = anthropic.Anthropic(api_key=_api_key()).messages.parse(
             model=self.model,
             max_tokens=MAX_TOKENS,
             system=SYSTEM,
