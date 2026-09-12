@@ -10,6 +10,13 @@ here, and the index lifecycle has to read them to say whether the committed
 index still describes the corpus — so this module has to be importable from the
 gate, and importing it must not put an HTTP client in that graph.
 
+Spend is capped here rather than reported. `embed_texts` takes a `Cap` and asks
+it before every batch whether that batch fits inside what is left of the day,
+so a corpus that grew past the budget stops the build with no index written
+instead of producing one and an invoice. Embeddings are the easy half of
+guarantee 5's cost side: there is no output to bound, so a batch's cost is a
+function of text that is already on disk.
+
 The build has to survive whatever rate limit the account it runs under happens
 to have, because the point of committing vectors is that anyone can rebuild
 them. Rather than hard-coding one tier's allowances, the client schedules
@@ -27,6 +34,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
+
+from .spend import Cap, estimate_tokens, price_for
 
 if TYPE_CHECKING:  # pragma: no cover - annotations only
     import httpx
@@ -74,15 +83,6 @@ def _api_key() -> str:
             "the eval runs off those committed vectors and needs no key."
         )
     return key
-
-
-def estimate_tokens(text: str) -> int:
-    """A deliberate over-estimate of a text's token count.
-
-    Used only for scheduling. Over-estimating costs a little wall clock on a
-    build that runs once; under-estimating costs a 429 partway through.
-    """
-    return max(1, len(text) // 3)
 
 
 class _RateLimiter:
@@ -177,11 +177,16 @@ def embed_texts(
     *,
     model: str = MODEL,
     dimensions: int = DIMENSIONS,
+    cap: Cap | None = None,
 ) -> np.ndarray:
     """Embed texts in order, returning an L2-normalised (n, dimensions) array.
 
     This model embeds queries and documents into one space, so questions and
     chunks go through the same call with no asymmetric hint.
+
+    `cap` is asked before each batch and told after it. Passing `None` runs
+    uncapped, which is for tests that stub the transport and therefore spend
+    nothing; every path that can reach the real endpoint passes one.
     """
     if not texts:
         return np.zeros((0, dimensions), dtype=np.float32)
@@ -198,6 +203,11 @@ def embed_texts(
 
     with httpx.Client(timeout=120) as client:
         for number, (tokens, batch) in enumerate(batches, start=1):
+            if cap is not None:
+                # Before the request, not after. A batch that does not fit
+                # stops the build here, with no index written and the previous
+                # one still on disk.
+                cap.authorise(price_for(model).usd(tokens), f"embedding batch {number}")
             limiter.acquire(tokens)
             print(
                 f"  batch {number}/{len(batches)} "
@@ -215,6 +225,17 @@ def embed_texts(
                     "encoding_format": "float",
                 },
             )
+            if cap is not None:
+                # Billed at what the API says it used, not at the estimate the
+                # authorisation was made against.
+                billed = (payload.get("usage") or {}).get("prompt_tokens", tokens)
+                entry = cap.record(model, int(billed))
+                print(
+                    f"    {billed} tokens, ${entry.usd:.4f}; "
+                    f"${cap.spent_today():.4f} of ${cap.daily_usd:.2f} spent today",
+                    file=sys.stderr,
+                    flush=True,
+                )
             data = sorted(payload["data"], key=lambda item: item["index"])
             if len(data) != len(batch):
                 raise EmbeddingError(

@@ -134,9 +134,9 @@ refusal:
 # Budgets — guarantee 5.
 #
 # Latency and cost are one guarantee because they are one question: what a
-# request, or a command, is allowed to spend before the behaviour changes. This
-# is the latency half. Everything here is a ceiling, and `budget.py` refuses the
-# file outright when these numbers contradict each other.
+# request, or a command, is allowed to spend before the behaviour changes.
+# Everything here is a ceiling, and `budget.py` refuses the file outright when
+# these numbers contradict each other.
 budget:
   # What the service enforces per request. Exceeding it abandons the request
   # with a 503 rather than answering: the deadline is checked inside the
@@ -164,3 +164,16 @@ budget:
   # A bar sitting at the deadline would mean a green build on the last commit
   # before requests start being abandoned.
   max_request_ms: 50.0
+
+  # The hard daily cap on the two commands that call an API. Asked before every
+  # request, not totalled after: a call that does not fit stops the command with
+  # nothing written.
+  #
+  # This was DAILY_SPEND_CAP_USD in .env.example, where nothing read it. It
+  # lives here instead so that raising it is a diff rather than a local
+  # environment nobody sees, and so the gate and the runtime cannot disagree
+  # about what it is. There is deliberately no environment override.
+  #
+  # For scale: one full record-drafts run was billed $0.57 on 2026-09-12, so the
+  # cap is about three of them in a day.
+  daily_cap_usd: 2.00

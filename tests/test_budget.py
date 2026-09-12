@@ -32,6 +32,7 @@ from .synthetic import make_index
 LIMITS = {
     "request_deadline_ms": 150.0,
     "max_request_ms": 50.0,
+    "daily_cap_usd": 2.00,
 }
 
 

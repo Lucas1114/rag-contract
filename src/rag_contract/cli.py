@@ -14,12 +14,18 @@ Eight commands, two of which touch the network:
                    no network
     answer         answer one question from the committed fixtures, showing the
                    grounding check and the state it lands in; no network
-    gate           run the eval and hold it to eval/thresholds.yaml; no network
+    gate           run both evals and hold them and the index freshness check
+                   to eval/thresholds.yaml; no network
 
 The split is the point. `gate` is what CI runs, and everything under it is
 deterministic — committed vectors, committed drafts, no key, no network, no
 live LLM. The two commands that do call an API are run once by hand and their
 output is committed as a build artefact.
+
+Those two are also the only two that can spend money, so they are the two that
+carry a spend cap. It is asked before every request and refuses the ones that
+would break the day's budget, which means a command stopping with nothing
+written rather than a log line after the fact. `spend.py` has the reasoning.
 """
 
 from __future__ import annotations
@@ -55,6 +61,7 @@ from .index import INDEX_DIR, load_index, write_index
 from .lifecycle import index_status
 from .retrieval import search
 from .sections import parse_corpus
+from .spend import Cap, Ledger, embedding_usd
 
 RESULTS_PATH = (
     Path(__file__).resolve().parents[2] / "eval" / "results" / "retrieval.json"
@@ -112,6 +119,13 @@ def cmd_index_status(args: argparse.Namespace) -> int:
 
 
 def cmd_build_index(args: argparse.Namespace) -> int:
+    """One of the two commands that spend money, and so one of two that are capped.
+
+    The cap is asked before each batch. A corpus that outgrew the budget stops
+    here with no index written and the committed one untouched, which is the
+    same shape as a failed reload leaving the registry on the last index known
+    to be good.
+    """
     from .embedding import DIMENSIONS, MODEL, embed_texts
 
     documents = load_documents()
@@ -120,13 +134,21 @@ def cmd_build_index(args: argparse.Namespace) -> int:
     chunks = chunk_sections(sections, params)
     questions = load_questions()
 
+    cap = Cap(
+        daily_usd=load_thresholds(args.thresholds).budget.daily_cap_usd,
+        ledger=Ledger(),
+        command="build-index",
+    )
+    texts = [c.embedding_text for c in chunks] + [q.question for q in questions]
     print(
         f"embedding {len(chunks)} chunks and {len(questions)} questions "
-        f"with {MODEL} at {DIMENSIONS} dimensions",
+        f"with {MODEL} at {DIMENSIONS} dimensions; "
+        f"~${embedding_usd(texts, MODEL):.4f} against ${cap.remaining():.4f} "
+        f"left of today's ${cap.daily_usd:.2f}",
         file=sys.stderr,
     )
-    chunk_vectors = embed_texts([c.embedding_text for c in chunks])
-    question_vectors = embed_texts([q.question for q in questions])
+    chunk_vectors = embed_texts([c.embedding_text for c in chunks], cap=cap)
+    question_vectors = embed_texts([q.question for q in questions], cap=cap)
 
     meta = write_index(
         documents=documents,
@@ -249,10 +271,16 @@ def cmd_record_drafts(args: argparse.Namespace) -> int:
             print(f"no question matches {args.only}", file=sys.stderr)
             return 1
 
-    drafter = LiveDrafter(model=args.model)
+    cap = Cap(
+        daily_usd=load_thresholds(args.thresholds).budget.daily_cap_usd,
+        ledger=Ledger(),
+        command="record-drafts",
+    )
+    drafter = LiveDrafter(model=args.model, cap=cap)
     print(
         f"drafting {len(questions)} questions with {args.model} over index "
-        f"{index.version}",
+        f"{index.version}; ${cap.remaining():.4f} left of today's "
+        f"${cap.daily_usd:.2f}",
         file=sys.stderr,
     )
     for question in questions:
@@ -272,7 +300,7 @@ def cmd_record_drafts(args: argparse.Namespace) -> int:
         )
         print(
             f"{question.id}  {len(claims):>2} claims  {len(passages):>2} passages"
-            f"  -> {path.name}",
+            f"  -> {path.name}  (${cap.spent_today():.4f} spent today)",
             file=sys.stderr,
         )
     return 0
@@ -381,6 +409,7 @@ def build_parser() -> argparse.ArgumentParser:
         "(the only command that calls the embedding API)",
     )
     build.add_argument("--index-dir", type=Path, default=INDEX_DIR)
+    build.add_argument("--thresholds", type=Path, default=THRESHOLDS_PATH)
     build.set_defaults(func=cmd_build_index)
 
     evaluate_cmd = subparsers.add_parser(
@@ -410,6 +439,7 @@ def build_parser() -> argparse.ArgumentParser:
     drafts.add_argument("--fixtures-dir", type=Path, default=FIXTURES_DIR)
     drafts.add_argument("--top-k", type=int, default=TOP_K)
     drafts.add_argument("--model", default=DRAFT_MODEL)
+    drafts.add_argument("--thresholds", type=Path, default=THRESHOLDS_PATH)
     drafts.add_argument(
         "--only", help="comma-separated question ids, for re-recording a few"
     )

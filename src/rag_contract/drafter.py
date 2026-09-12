@@ -32,6 +32,13 @@ the state rules is *measured* by the answer eval rather than frozen out of it �
 which is the property that lets guarantee 3 be gated at all. Freezing the
 verdicts instead would produce an eval that could never fail.
 
+`MAX_TOKENS` is deliberately *not* part of that fingerprint. The fingerprint
+exists to catch a changed instruction — claims written to answer a differently
+posed question — and an output ceiling does not change what was asked. All it
+can do is truncate, and truncation is refused outright rather than recorded. So
+a draft recorded under a larger ceiling is still a draft of this experiment, and
+the fixtures did not have to be bought again to lower it.
+
 The passages the draft was recorded against are stored with it, so a replay
 whose retrieval no longer matches can say so rather than quietly scoring a
 model response to a prompt it was never shown. The prompt itself is stored the
@@ -63,6 +70,7 @@ from typing import Protocol
 
 from .answering import Passage
 from .grounding import Claim
+from .spend import Cap, completion_bound_usd, estimate_tokens
 
 FIXTURES_DIR = Path(__file__).resolve().parents[2] / "eval" / "fixtures" / "drafts"
 _ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
@@ -70,8 +78,25 @@ _KEY_NAME = "OPENAI_API_KEY"
 
 MODEL = "gpt-5.5-2026-04-23"
 ENDPOINT = "https://api.openai.com/v1/chat/completions"
-MAX_TOKENS = 4000
 TIMEOUT_SECONDS = 180
+
+# The output ceiling on one draft, and the number guarantee 5's cost side is
+# actually about. It was 4000 — a generous default nobody had a reason for —
+# until the spend cap was wired up and priced it: 28 questions at 4000 output
+# tokens is $3.36 at $30/1M, and with input that is $3.90 against a $2.00 daily
+# cap. The cap would have refused to authorise a full run.
+#
+# 1500 is sized from what drafting this question set measurably uses. The
+# recorded run billed roughly 220 output tokens per question including reasoning
+# tokens, which count against this ceiling; 1500 is nearly seven times that and
+# brings the worst case to $1.80, inside the cap with room left.
+#
+# Cutting it is safe because truncation here is loud rather than silent:
+# `LiveDrafter.draft` refuses any response whose `finish_reason` is not `stop`,
+# so a draft that needed more room fails the command instead of committing a
+# half-written fixture. The gate holds the relationship rather than the number —
+# see `worst-case drafting` in gate.py.
+MAX_TOKENS = 1500
 
 # The drafter must return claims, not prose, or there is nothing to check per
 # claim. Enforced by the API rather than by parsing whatever came back.
@@ -169,12 +194,28 @@ class LiveDrafter:
     parsing prose afterwards. A drafter that returns a paragraph gives the
     grounding check nothing to check per claim, so the structure is not a
     convenience — it is what makes the guarantee enforceable at all.
+
+    The cap is a field rather than an argument to `draft`, because `Drafter` is
+    the interface the service is written against and the service spends nothing.
+    Only the implementation that can spend money carries the thing that stops it.
     """
 
     model: str = MODEL
+    cap: Cap | None = None
 
     def draft(self, question: str, passages: list[Passage]) -> list[Claim]:
         import httpx
+
+        prompt = _prompt(question, passages)
+        if self.cap is not None:
+            # Priced at the worst this call can do: known input plus the output
+            # ceiling below, which reasoning tokens also count against. Asked
+            # before the request, so a run that would break the cap stops with
+            # the fixtures it has already written intact.
+            self.cap.authorise(
+                completion_bound_usd(SYSTEM + prompt, MAX_TOKENS, self.model),
+                f"drafting {question!r}",
+            )
 
         response = httpx.post(
             ENDPOINT,
@@ -185,7 +226,7 @@ class LiveDrafter:
                 "max_completion_tokens": MAX_TOKENS,
                 "messages": [
                     {"role": "system", "content": SYSTEM},
-                    {"role": "user", "content": _prompt(question, passages)},
+                    {"role": "user", "content": prompt},
                 ],
                 "response_format": {
                     "type": "json_schema",
@@ -203,7 +244,19 @@ class LiveDrafter:
                 f"{response.status_code}: {response.text[:400]}"
             )
 
-        choice = response.json()["choices"][0]
+        payload = response.json()
+        if self.cap is not None:
+            # Billed at reported usage, so the day's running total is real spend
+            # rather than an accumulation of worst cases. Reasoning tokens are
+            # inside completion_tokens and are billed as output.
+            usage = payload.get("usage") or {}
+            self.cap.record(
+                self.model,
+                int(usage.get("prompt_tokens", estimate_tokens(SYSTEM + prompt))),
+                int(usage.get("completion_tokens", MAX_TOKENS)),
+            )
+
+        choice = payload["choices"][0]
         if choice.get("finish_reason") not in (None, "stop"):
             raise DrafterError(
                 f"drafting {question!r} stopped on "

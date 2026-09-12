@@ -33,6 +33,7 @@ refusal:
 budget:
   request_deadline_ms: 150.0
   max_request_ms: 50.0
+  daily_cap_usd: 2.00
 """
 
 REFUSAL = {
@@ -42,7 +43,11 @@ REFUSAL = {
 }
 
 
-BUDGET = {"request_deadline_ms": 150.0, "max_request_ms": 50.0}
+BUDGET = {
+    "request_deadline_ms": 150.0,
+    "max_request_ms": 50.0,
+    "daily_cap_usd": 2.00,
+}
 
 
 def thresholds(aggregate=None, max_rank=None, refusal=None, budget=None):
