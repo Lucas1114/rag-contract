@@ -206,6 +206,27 @@ budget:
   # honest caller has a reason to ask again.
   max_requests_per_minute: 60
 
+  # Which entry of `X-Forwarded-For` names the client, counted from the right.
+  #
+  # This is not a ceiling. It is what makes the two numbers above per-client
+  # rather than global, and it is committed here for the reason the daily cap
+  # is: an allowance reviewed in this file whose subject came from a
+  # deployment's environment is a ceiling nobody reviewed. Changing who a
+  # client is takes a diff.
+  #
+  # 1, for a chain with exactly one proxy in it: the Fly edge this service is
+  # served behind appends the peer it saw, so the rightmost entry is the
+  # visitor and the socket peer is that proxy. Counting from the right is the
+  # security property: a caller can only add entries on the left, so no header
+  # it sends can reach the hop this number points at. `ratelimit.py` has the
+  # argument in full.
+  #
+  # It was 0 for the whole of P06, which was correct while nothing was
+  # deployed and wrong the moment something was: behind a proxy every request
+  # arrives from the proxy, so all visitors shared one bucket and the second
+  # visitor to the public deployment would have been refused.
+  trusted_proxy_hops: 1
+
   # How many of those 60 may be spent at once. A rate alone does not describe
   # the failure above: 60 a minute permits 60 simultaneously, and simultaneous
   # is exactly what produced the abandoned requests. 10 keeps one client inside

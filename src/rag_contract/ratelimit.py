@@ -96,22 +96,45 @@ client cannot put more than ten requests into a 130-per-second process
 simultaneously, which the table above places well inside the region where
 nothing is abandoned.
 
-Who a client is, and what that does not cover
-----------------------------------------------
+Who a client is, and why it is counted from the right
+------------------------------------------------------
 
-The socket peer address, and nothing else. `X-Forwarded-For` is deliberately
-not consulted: it is written by the caller, so honouring it would let any
-client mint a fresh identity per request and walk past the limit by setting a
-header. The cost of that choice is real and belongs in the open — behind a
-reverse proxy every request arrives from the proxy, all callers share one
-bucket, and the limit becomes a global one. A deployment that terminates
-elsewhere has to hand this service the real peer (proxy protocol, or a trusted
-hop that rewrites the socket) or accept that behaviour.
+The socket peer, unless the deployment has declared how many proxies stand in
+front of it. `trusted_proxy_hops` in `eval/thresholds.yaml` is that count, and
+`resolve_client` below reads `X-Forwarded-For` from the *right* by exactly that
+many entries.
 
-The other thing this does not cover is many clients rather than one. A
-per-client limit bounds what one caller can do and cannot bound what a thousand
-of them do; that needs a global concurrency limit or something upstream of the
-process, and neither is in this repository. Guarantee 5 is about ceilings this
+The direction is the whole of the security argument. `X-Forwarded-For` is a
+list each proxy appends to, and what it appends is the peer *it* saw. So the
+rightmost entry was written by the hop nearest this process, the one to its
+left by the hop before that, and so on: the last N entries are the testimony of
+the N machines the deployment has decided to trust, and everything further left
+was written by whoever was calling. Reading the leftmost entry — the usual
+mistake, and the one that reads like "the original client" — trusts a value the
+caller types, which lets any client mint a fresh identity per request and walk
+past this limiter by setting a header.
+
+Counting from the right also fails safe when the count is wrong. Declare more
+hops than the chain actually has and the header is too short to satisfy them,
+so the request falls back to the socket peer: every caller collapses into one
+bucket, which is the old global-limit behaviour and refuses too much rather
+than too little. There is no arrangement of headers a caller can send that
+makes the list long enough to be believed, because a caller can only add
+entries on the left.
+
+The count was zero until this service was deployed behind one, and zero remains
+the right answer for a process exposed directly. What it cost while it was zero
+is worth stating, because it is what made the number necessary: behind a proxy
+every request arrives from the proxy, so all callers shared one bucket and the
+per-client limit was a global one — the second visitor to a public deployment
+would have been refused.
+
+What this does not cover
+------------------------
+
+Many clients rather than one. A per-client limit bounds what one caller can do
+and cannot bound what a thousand of them do; that needs a global concurrency
+limit or something upstream of the process, and neither is in this repository. Guarantee 5 is about ceilings this
 service enforces on itself, and stating the edge of that is worth more than a
 limiter that implies it covers more than it does.
 """
@@ -136,6 +159,30 @@ Clock = Callable[[], float]
 MAX_TRACKED_CLIENTS = 10_000
 
 UNKNOWN_CLIENT = "unknown"
+
+FORWARDED_FOR = "x-forwarded-for"
+
+
+def resolve_client(
+    peer: str | None, forwarded_for: str | None, trusted_proxy_hops: int
+) -> str:
+    """Who is asking, as far as this service is willing to believe.
+
+    `trusted_proxy_hops` entries in from the right of `X-Forwarded-For`, or the
+    socket peer when the count is zero or the header cannot support it. See the
+    module docstring for why the direction is the security property and why the
+    fallback is the conservative one.
+
+    A caller the transport cannot identify and no trusted hop named shares one
+    bucket with every other such caller, which is again the conservative
+    direction: the alternative is an unidentified client having no limit at all.
+    """
+    if trusted_proxy_hops > 0 and forwarded_for:
+        hops = [entry.strip() for entry in forwarded_for.split(",")]
+        hops = [entry for entry in hops if entry]
+        if len(hops) >= trusted_proxy_hops:
+            return hops[-trusted_proxy_hops]
+    return peer or UNKNOWN_CLIENT
 
 
 @dataclass(frozen=True)

@@ -639,13 +639,38 @@ exactly the caller it has decided is asking for too much, which is the
 contention above with extra steps. This one refuses immediately and says when to
 come back.
 
-A client is the socket peer and nothing else. `X-Forwarded-For` is deliberately
-not consulted, because it is written by the caller: honouring it would let any
-client mint a fresh identity per request and step over the limit by setting a
-header. The cost of that is real and belongs in the open — behind a reverse
-proxy every request arrives from the proxy, all callers share one bucket, and
-the limit becomes a global one. A deployment that terminates TLS elsewhere has
-to hand this service the real peer or accept that behaviour.
+### Who the allowance applies to
+
+An allowance is half of a per-client limit. The other half is what "client"
+means, and `trusted_proxy_hops` in `eval/thresholds.yaml` is that half:
+committed to the same reviewed file as the numbers, because an allowance whose
+subject comes from a deployment's environment is a ceiling nobody reviewed.
+
+A client is the socket peer, or — where the deployment declares proxies in
+front of it — that many entries in from the **right** of `X-Forwarded-For`. The
+direction is the entire security property. Each proxy appends the peer it saw,
+so the last N entries are the testimony of the N machines the deployment
+trusts, and everything to their left was typed by whoever was calling. Reading
+the leftmost entry, which is the usual mistake and reads like "the original
+client", lets any caller mint a fresh identity per request and walk past the
+limiter by setting a header.
+
+Counting from the right also fails safe. Declare more hops than the chain has
+and the header can never satisfy them, so the request falls back to the socket
+peer: every caller collapses into one bucket, which refuses too much rather
+than too little. A caller can only add entries on the left, so there is no
+header that makes the list long enough to be believed.
+
+This was 0 through P06, which was correct while nothing was deployed and became
+wrong the moment something was: behind a proxy every request arrives from the
+proxy, so all visitors would have shared one bucket and the second visitor to
+the public deployment would have been refused. It is 1 now, for a chain with a
+single Fly edge in it — that proxy appends the peer it saw, so the rightmost
+entry is the visitor — and the gate holds the surface to it from both sides:
+one caller varying the forgeable entries must still be refused past the burst,
+and requests differing only at the trusted hop must not be. What no gate can
+check is that the committed count matches the real chain, which is the reason
+the fail-safe direction matters and the reason the number is read in a diff.
 
 The limit covers every route, `/health` included. Exempting it is the obvious
 kindness and the wrong one: `/health` measures 7.6 ms — as much as the slowest
@@ -673,8 +698,8 @@ file and appears in the diff of the commit that does it.
 
 It applies five independent kinds of check — the two below, plus the refusal
 thresholds described under failure behaviour above, the index freshness check
-described under index lifecycle, and the budgets described above. Thirty-three
-checks in total on this commit, thirty-five with `--check-report`.
+described under index lifecycle, and the budgets described above. Thirty-four
+checks in total on this commit, thirty-six with `--check-report`.
 
 **Aggregate floors** on recall@1, recall@5, recall@10 and MRR. Each sits below
 the measured value with deliberate headroom: with 20 answerable questions one
@@ -788,7 +813,9 @@ the grounding check and the state machine against the committed index.
 
 That server enforces the committed allowance per client — 60 requests a minute,
 10 at once — so a loop over `/questions` fast enough to notice gets a 429 and a
-`Retry-After` rather than a slower answer.
+`Retry-After` rather than a slower answer. Run this way the client is the
+socket peer; the committed `trusted_proxy_hops` is what makes it the visitor
+rather than the proxy when the same process runs behind one.
 
 The eval needs no API key: the vectors are committed. Rebuilding the index does,
 and is one of exactly two steps that call an external service:

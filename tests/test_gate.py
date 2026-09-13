@@ -10,6 +10,7 @@ without anyone recording what it costs.
 import numpy as np
 import pytest
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from rag_contract.app import create_app, probe
 from rag_contract.budget import BudgetLimits
@@ -22,6 +23,7 @@ from rag_contract.gate import (
     rate_limit_check,
     refusal_checks,
     run_gate,
+    trusted_hop_check,
 )
 from rag_contract.registry import IndexRegistry
 from rag_contract.service import Service
@@ -49,6 +51,7 @@ budget:
   max_record_drafts_usd: 1.00
   max_requests_per_minute: 60
   max_client_burst: 10
+  trusted_proxy_hops: 0
 """
 
 REFUSAL = {
@@ -66,6 +69,7 @@ BUDGET = {
     "max_record_drafts_usd": 1.00,
     "max_requests_per_minute": 60,
     "max_client_burst": 10,
+    "trusted_proxy_hops": 0,
 }
 
 
@@ -522,3 +526,152 @@ def test_the_check_goes_red_when_the_limiter_is_not_in_the_stack():
     )
     assert not check.passed
     assert "not being enforced" in check.detail
+
+
+# --- The trusted-hop check ------------------------------------------------
+#
+# The check above holds that a limiter is installed. This one holds that it is
+# pointed at the right thing, which fails in two directions and neither is
+# caught by counting refusals from one client.
+
+
+def hop(forged, distinct, hops=1):
+    return trusted_hop_check(
+        forged_statuses=forged,
+        distinct_statuses=distinct,
+        thresholds=thresholds(budget={**BUDGET, "trusted_proxy_hops": hops}),
+    )
+
+
+def test_a_surface_reading_the_trusted_hop_passes():
+    check = hop([200] * 10 + [429], [200] * 11)
+    assert check.passed
+    assert "hop 1 from the right" in check.detail
+
+
+def test_a_surface_reading_the_header_from_the_left_fails_the_build():
+    """The security failure: every request arrives as a new client.
+
+    The caller writes the leftmost entries, so a limiter reading them is one
+    any caller opts out of by setting a header.
+    """
+    check = hop([200] * 11, [200] * 11)
+    assert not check.passed
+    assert "written by the caller" in check.detail
+
+
+def test_a_surface_ignoring_the_committed_hops_fails_the_build():
+    """The availability failure, and the reason the number exists.
+
+    Behind a proxy every request arrives from one socket, so a surface that
+    does not read the header refuses the second visitor.
+    """
+    check = hop([200] * 10 + [429], [200] * 10 + [429])
+    assert not check.passed
+    assert "every visitor behind the proxy is one client" in check.detail
+
+
+def test_trusting_no_hop_means_the_header_must_change_nothing():
+    """The same check, read the other way, for a process exposed directly."""
+    assert hop([200] * 10 + [429], [200] * 10 + [429], hops=0).passed
+
+    separated = hop([200] * 10 + [429], [200] * 11, hops=0)
+    assert not separated.passed
+    assert "no hop is trusted" in separated.detail
+
+
+def test_the_committed_surface_identifies_a_client_at_the_committed_hop():
+    """End to end through the real ASGI app, both directions, frozen clock.
+
+    The same two probes `rag-contract gate` runs, against the hop count in
+    `eval/thresholds.yaml` rather than one this test chose.
+    """
+    limits = load_thresholds()
+    hops = limits.budget.trusted_proxy_hops
+    count = limits.budget.max_client_burst + 1
+
+    def statuses(headers):
+        app = create_app(
+            Service(
+                registry=IndexRegistry(make_index(["rfc9110#1"], VECTORS)),
+                questions={},
+                drafter=None,
+            ),
+            limiter=limits.budget.limiter(clock=lambda: 0.0),
+            trusted_proxy_hops=hops,
+        )
+        return [
+            status
+            for status, _ in probe(
+                app,
+                "/questions",
+                client_host="10.0.0.1",
+                count=count,
+                headers=headers,
+            )
+        ]
+
+    def chain(client, nonce):
+        entries = [nonce, client] + [f"10.9.9.{i}" for i in range(1, max(hops, 1))]
+        return ", ".join(entries)
+
+    check = trusted_hop_check(
+        forged_statuses=statuses(
+            [
+                {"X-Forwarded-For": chain("203.0.113.7", f"1.2.3.{i}")}
+                for i in range(count)
+            ]
+        ),
+        distinct_statuses=statuses(
+            [
+                {"X-Forwarded-For": chain(f"203.0.113.{i}", "1.2.3.4")}
+                for i in range(count)
+            ]
+        ),
+        thresholds=limits,
+    )
+    assert check.passed, check.detail
+
+
+def test_the_check_goes_red_when_the_surface_reads_the_wrong_end():
+    """Proved against the bug, not just against a passing run.
+
+    A surface keyed on the leftmost entry is what "honour X-Forwarded-For"
+    means to most people, and it is the one arrangement under which the
+    limiter refuses nobody.
+    """
+    from rag_contract.ratelimit import RateLimiter
+
+    limits = load_thresholds()
+    limiter = limits.budget.limiter(clock=lambda: 0.0)
+    assert isinstance(limiter, RateLimiter)
+
+    left_keyed = FastAPI()
+
+    @left_keyed.middleware("http")
+    async def wrong_end(request, call_next):
+        forwarded = request.headers.get("x-forwarded-for", "")
+        client = forwarded.split(",")[0].strip() or "peer"
+        if limiter.check(client).allowed:
+            return await call_next(request)
+        return JSONResponse(content={}, status_code=429)
+
+    @left_keyed.get("/questions")
+    def questions() -> dict:
+        return {"questions": []}
+
+    count = limits.budget.max_client_burst + 1
+    results = probe(
+        left_keyed,
+        "/questions",
+        client_host="10.0.0.1",
+        count=count,
+        headers=[{"X-Forwarded-For": f"1.2.3.{i}, 203.0.113.7"} for i in range(count)],
+    )
+    check = trusted_hop_check(
+        forged_statuses=[status for status, _ in results],
+        distinct_statuses=[200] * count,
+        thresholds=limits,
+    )
+    assert not check.passed
+    assert "written by the caller" in check.detail

@@ -18,7 +18,7 @@ import pytest
 
 from rag_contract.budget import MAX_CLIENT_SHARE, PROCESS_MINUTE_MS, BudgetLimits
 from rag_contract.gate import load_thresholds
-from rag_contract.ratelimit import RateLimiter
+from rag_contract.ratelimit import UNKNOWN_CLIENT, RateLimiter, resolve_client
 
 
 class Clock:
@@ -227,3 +227,76 @@ def test_a_burst_deeper_than_the_minutes_allowance_is_refused():
         BudgetLimits.from_mapping(
             {**LIMITS, "max_requests_per_minute": 10, "max_client_burst": 11}
         )
+
+
+# --- Who a client is ------------------------------------------------------
+#
+# The identity, not the allowance. Every test here is one line of
+# `resolve_client`, and each of them is a way the limiter stops being a limiter:
+# read the header from the wrong end and any caller can mint an identity per
+# request; ignore it behind a proxy and every visitor becomes one client.
+
+
+def test_with_no_trusted_hop_the_client_is_the_socket_peer():
+    assert resolve_client("10.0.0.1", None, 0) == "10.0.0.1"
+
+
+def test_with_no_trusted_hop_the_header_changes_nothing():
+    """A header nobody is meant to believe may not decide who is asking."""
+    assert resolve_client("10.0.0.1", "1.1.1.1, 2.2.2.2", 0) == "10.0.0.1"
+
+
+def test_one_trusted_hop_reads_the_entry_that_proxy_appended():
+    """The rightmost entry is the peer the nearest proxy actually saw."""
+    assert resolve_client("10.0.0.1", "203.0.113.9", 1) == "203.0.113.9"
+
+
+def test_entries_left_of_the_trusted_hop_are_the_callers_and_are_ignored():
+    """The forgery this counts from the right to defeat.
+
+    A caller sending its own `X-Forwarded-For` only ever prepends: the proxy
+    appends what it saw afterwards. So everything left of the trusted hop is
+    the caller's own text, and reading it would hand a fresh identity to
+    anyone who asked for one.
+    """
+    assert resolve_client("10.0.0.1", "evil, 203.0.113.9", 1) == "203.0.113.9"
+    assert resolve_client("10.0.0.1", "a, b, c, 203.0.113.9", 1) == "203.0.113.9"
+
+
+def test_two_trusted_hops_step_past_the_inner_proxy():
+    """A CDN in front of the platform edge: the visitor is two in from the right."""
+    assert resolve_client("10.0.0.1", "evil, 203.0.113.9, 198.51.100.4", 2) == (
+        "203.0.113.9"
+    )
+
+
+def test_a_header_too_short_for_the_committed_chain_falls_back_to_the_peer():
+    """Declaring more hops than exist refuses too much rather than too little.
+
+    There is no header a caller can send that makes the list long enough to be
+    believed, because a caller can only add entries on the left — so the
+    failure mode of a wrong count is the old shared-bucket behaviour, not an
+    unlimited one.
+    """
+    assert resolve_client("10.0.0.1", "203.0.113.9", 2) == "10.0.0.1"
+
+
+def test_a_missing_header_behind_a_trusted_hop_falls_back_to_the_peer():
+    assert resolve_client("10.0.0.1", None, 1) == "10.0.0.1"
+    assert resolve_client("10.0.0.1", "", 1) == "10.0.0.1"
+
+
+def test_whitespace_and_empty_entries_do_not_shift_the_count():
+    """`X-Forwarded-For` is comma-space separated and proxies are inconsistent.
+
+    An entry the parser miscounts is an entry the count points past, which is
+    the forgery this is meant to stop.
+    """
+    assert resolve_client("10.0.0.1", " evil ,  203.0.113.9 ", 1) == "203.0.113.9"
+    assert resolve_client("10.0.0.1", "evil, , 203.0.113.9", 1) == "203.0.113.9"
+
+
+def test_a_caller_the_transport_cannot_name_shares_one_bucket():
+    """The conservative direction: the alternative is no limit at all."""
+    assert resolve_client(None, None, 0) == UNKNOWN_CLIENT
+    assert resolve_client(None, None, 1) == UNKNOWN_CLIENT

@@ -64,7 +64,7 @@ from .budget import DeadlineExceeded
 from .gate import load_thresholds
 from .index import IndexError_
 from .lifecycle import index_status
-from .ratelimit import UNKNOWN_CLIENT, RateLimiter
+from .ratelimit import FORWARDED_FOR, RateLimiter, resolve_client
 from .registry import IndexRegistry
 from .service import Service, UnknownQuestion
 
@@ -85,25 +85,26 @@ def _startup_registry() -> IndexRegistry:
     return registry
 
 
-def client_key(request: Request) -> str:
-    """Who is asking, as far as this service is willing to believe.
+def client_key(request: Request, trusted_proxy_hops: int) -> str:
+    """Who is asking, translated off the wire and decided in `ratelimit.py`.
 
-    The socket peer and nothing else. `X-Forwarded-For` is written by the
-    caller, so consulting it would let any client mint a fresh identity per
-    request and step over the limit by setting a header — a limiter any caller
-    can opt out of is not one. The cost is that behind a reverse proxy every
-    request arrives from the proxy and the per-client limit becomes a global
-    one; `ratelimit.py` says so rather than leaving it to be discovered.
-
-    A caller the transport cannot identify shares one bucket with every other
-    such caller, which is the conservative direction: the alternative is an
-    unidentified client having no limit at all.
+    The socket peer, or — when the deployment has committed a hop count —
+    that many entries in from the right of `X-Forwarded-For`. Reading the
+    header rather than the socket is only safe because of the direction:
+    entries are appended by each proxy, so the rightmost N were written by the
+    N machines in front of this process and everything to their left was
+    written by the caller. `resolve_client` holds that argument and the
+    fallbacks; this function does what the rest of the module does, which is
+    take something out of an HTTP request and decide nothing.
     """
-    return request.client.host if request.client else UNKNOWN_CLIENT
+    peer = request.client.host if request.client else None
+    return resolve_client(peer, request.headers.get(FORWARDED_FOR), trusted_proxy_hops)
 
 
 def create_app(
-    service: Service | None = None, limiter: RateLimiter | None = None
+    service: Service | None = None,
+    limiter: RateLimiter | None = None,
+    trusted_proxy_hops: int | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -119,7 +120,21 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.service = service
-    app.state.limiter = limiter or load_thresholds().budget.limiter()
+    # Both come from the committed budget block, and both are read here for the
+    # same reason: the process that composes the service is where
+    # `eval/thresholds.yaml` is read, so the gate and the runtime cannot
+    # disagree about the allowance or about who it applies to.
+    committed = (
+        load_thresholds().budget
+        if limiter is None or trusted_proxy_hops is None
+        else None
+    )
+    app.state.limiter = limiter or committed.limiter()
+    app.state.trusted_proxy_hops = (
+        committed.trusted_proxy_hops
+        if trusted_proxy_hops is None
+        else trusted_proxy_hops
+    )
 
     def current() -> Service:
         return app.state.service
@@ -140,7 +155,9 @@ def create_app(
         this limiter does not see — the container directly, or a separate port
         — rather than on a public route carving an exemption anyone can use.
         """
-        decision = app.state.limiter.check(client_key(request))
+        decision = app.state.limiter.check(
+            client_key(request, app.state.trusted_proxy_hops)
+        )
         if decision.allowed:
             return await call_next(request)
         return JSONResponse(
@@ -223,9 +240,19 @@ def create_app(
 
 
 def probe(
-    application, path: str, *, client_host: str, count: int
+    application,
+    path: str,
+    *,
+    client_host: str,
+    count: int,
+    headers: list[dict[str, str]] | None = None,
 ) -> list[tuple[int, dict[str, str]]]:
     """Send `count` GETs through an ASGI app from one client. No HTTP client.
+
+    `headers`, when given, is one mapping per request, which is what lets the
+    gate vary `X-Forwarded-For` across a run: the trusted-hop check is entirely
+    about which requests share a bucket, and that cannot be driven from one
+    fixed header set.
 
     This exists for the gate. The regression worth catching about a rate limit
     is not that the arithmetic in `ratelimit.py` is wrong — the tests hold that
@@ -240,7 +267,9 @@ def probe(
     all a test client does underneath.
     """
 
-    async def send_one() -> tuple[int, dict[str, str]]:
+    per_request = headers or [{} for _ in range(count)]
+
+    async def send_one(extra: dict[str, str]) -> tuple[int, dict[str, str]]:
         scope = {
             "type": "http",
             "asgi": {"version": "3.0", "spec_version": "2.3"},
@@ -251,7 +280,8 @@ def probe(
             "raw_path": path.encode(),
             "query_string": b"",
             "root_path": "",
-            "headers": [(b"host", b"gate")],
+            "headers": [(b"host", b"gate")]
+            + [(k.lower().encode(), v.encode()) for k, v in extra.items()],
             "client": (client_host, 50000),
             "server": ("gate", 80),
         }
@@ -272,7 +302,7 @@ def probe(
         return captured.get("status", 0), captured.get("headers", {})
 
     async def all_of_them() -> list[tuple[int, dict[str, str]]]:
-        return [await send_one() for _ in range(count)]
+        return [await send_one(extra) for extra in per_request]
 
     return asyncio.run(all_of_them())
 

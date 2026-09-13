@@ -76,6 +76,22 @@ a minute, each entitled to `request_deadline_ms`, is a statement about how much
 of a process one client may demand. The limiter itself is in `ratelimit.py`,
 along with the measurement that says why this service needs one at all — which
 is not the reason a public service usually does.
+
+And a fourth, which is not a ceiling at all
+-------------------------------------------
+
+`trusted_proxy_hops` says how many proxies stand in front of this process, and
+it is here because an allowance is only half of a per-client limit. The other
+half is what "client" means, and the two cannot live in different places: an
+allowance committed to a reviewed file while the identity it applies to comes
+from a deployment's environment is a ceiling whose subject nobody reviewed. A
+deployment that quietly set the hop count wrong would not fail — it would
+collapse every visitor into one bucket, or hand every visitor an unlimited one,
+and the committed 60 a minute would go on describing neither.
+
+So it is a committed number under the same rule as `daily_cap_usd`: changing
+who a client is takes a diff. `ratelimit.py` sets out what the count means and
+why it is counted from the right.
 """
 
 from __future__ import annotations
@@ -105,6 +121,14 @@ Clock = Callable[[], float]
 # promise rather than with the measurement.
 PROCESS_MINUTE_MS = 60_000.0
 MAX_CLIENT_SHARE = 0.25
+
+# Every declared hop is a machine whose word this service takes for who the
+# caller is, so the count is the depth of a real deployment's chain and not a
+# tuning knob. Two — a CDN in front of a platform edge — is already a deep
+# deployment; past a handful the number is a typo, and a typo in this direction
+# is the whole limiter, because a count larger than the chain falls back to the
+# socket peer on every request and collapses every visitor into one bucket.
+MAX_TRUSTED_HOPS = 4
 
 
 class BudgetError(RuntimeError):
@@ -154,6 +178,11 @@ class BudgetLimits:
     max_record_drafts_usd: float
     max_requests_per_minute: int
     max_client_burst: int
+    # How many proxies stand between the internet and this process. Not a
+    # ceiling — it is what makes the two above per-client rather than global.
+    # Zero means the socket peer is the client, which is right for a process
+    # exposed directly and wrong behind every PaaS.
+    trusted_proxy_hops: int
 
     @classmethod
     def from_mapping(cls, raw: Mapping | None) -> BudgetLimits:
@@ -173,7 +202,11 @@ class BudgetLimits:
         # Counts rather than quantities: half a request a minute is not a
         # smaller allowance, it is a typo, so these are read as whole numbers
         # and a fractional one is refused rather than silently floored.
-        integers = ("max_requests_per_minute", "max_client_burst")
+        integers = (
+            "max_requests_per_minute",
+            "max_client_burst",
+            "trusted_proxy_hops",
+        )
         fields = floats + integers
         missing = [name for name in fields if name not in raw]
         if missing:
@@ -192,8 +225,22 @@ class BudgetLimits:
             **{name: int(raw[name]) for name in integers},
         )
         for name in fields:
+            if name == "trusted_proxy_hops":
+                continue
             if getattr(limits, name) <= 0:
                 raise BudgetError(f"{name} must be positive")
+
+        # The one field where zero is a real answer rather than an unset one: a
+        # process reachable directly has no hop to trust, and saying so is a
+        # decision worth being able to express.
+        if not 0 <= limits.trusted_proxy_hops <= MAX_TRUSTED_HOPS:
+            raise BudgetError(
+                f"trusted_proxy_hops {limits.trusted_proxy_hops} is outside "
+                f"0..{MAX_TRUSTED_HOPS}. The count is how deep the real chain "
+                "in front of this process is, not a preference: a count larger "
+                "than the chain trusts a hop that does not exist, and one "
+                "smaller trusts a header the caller wrote."
+            )
 
         # The gate's bar has to leave room under the behaviour ceiling. A bar
         # within a factor of two of the deadline is not a gate on the deadline,

@@ -321,16 +321,25 @@ def test_two_clients_are_limited_independently_over_http(serving):
     assert second.get("/answer/qa").status_code == 200
 
 
+def proxied(registry, hops, burst=1):
+    """A surface configured for a deployment `hops` proxies deep."""
+    service = Service(registry=registry, questions=QUESTIONS, drafter=StaticDrafter())
+    app = create_app(
+        service,
+        limiter=RateLimiter(60, burst, clock=lambda: 0.0),
+        trusted_proxy_hops=hops,
+    )
+    return TestClient(app, client=("10.0.0.1", 40000))
+
+
 def test_a_forwarded_for_header_does_not_buy_a_fresh_allowance(serving):
-    """The header is written by the caller, so trusting it is trusting nobody.
+    """With no trusted hop, the header is written by nobody worth believing.
 
     A limiter any client can step over by setting a header is not one, and this
     is the concrete form of that: the same peer asking twice under two claimed
     identities is still one client.
     """
-    service = Service(registry=serving, questions=QUESTIONS, drafter=StaticDrafter())
-    app = create_app(service, limiter=RateLimiter(60, 1, clock=lambda: 0.0))
-    api = TestClient(app, client=("10.0.0.1", 40000))
+    api = proxied(serving, hops=0)
 
     assert (
         api.get("/answer/qa", headers={"X-Forwarded-For": "1.1.1.1"}).status_code == 200
@@ -338,6 +347,77 @@ def test_a_forwarded_for_header_does_not_buy_a_fresh_allowance(serving):
     assert (
         api.get("/answer/qa", headers={"X-Forwarded-For": "2.2.2.2"}).status_code == 429
     )
+
+
+def test_behind_one_proxy_two_visitors_are_two_clients(serving):
+    """The deployment case, and the reason the hop count exists.
+
+    Both requests arrive from the same socket — the proxy — so without the
+    committed hop this is one client and the second visitor to a public
+    deployment gets a 429.
+    """
+    api = proxied(serving, hops=1)
+
+    assert (
+        api.get("/answer/qa", headers={"X-Forwarded-For": "203.0.113.1"}).status_code
+        == 200
+    )
+    assert (
+        api.get("/answer/qa", headers={"X-Forwarded-For": "203.0.113.2"}).status_code
+        == 200
+    )
+    assert (
+        api.get("/answer/qa", headers={"X-Forwarded-For": "203.0.113.1"}).status_code
+        == 429
+    )
+
+
+def test_a_visitor_cannot_prepend_its_way_out_of_the_limit(serving):
+    """What counting from the right buys.
+
+    The proxy appends the peer it saw, so whatever the caller wrote is to the
+    left of it. Two requests dressed up as different clients are still one.
+    """
+    api = proxied(serving, hops=1)
+
+    assert (
+        api.get(
+            "/answer/qa", headers={"X-Forwarded-For": "1.1.1.1, 203.0.113.1"}
+        ).status_code
+        == 200
+    )
+    assert (
+        api.get(
+            "/answer/qa", headers={"X-Forwarded-For": "2.2.2.2, 203.0.113.1"}
+        ).status_code
+        == 429
+    )
+
+
+def test_a_request_that_skipped_the_proxy_is_the_socket_peer(serving):
+    """No header where one hop is committed: the request did not come through it.
+
+    Falling back to the peer is the conservative direction — that address is
+    shared by everything reaching the process directly, so it refuses too much
+    rather than handing out an unlimited identity.
+    """
+    api = proxied(serving, hops=1)
+
+    assert api.get("/answer/qa").status_code == 200
+    assert api.get("/answer/qa", headers={"X-Forwarded-For": ""}).status_code == 429
+
+
+def test_the_surface_takes_its_hop_count_from_the_committed_file(serving):
+    """Not passed in by the caller of `create_app`, in the deployed case.
+
+    The allowance and its subject are read from `eval/thresholds.yaml` in the
+    same place, so the gate and the runtime cannot disagree about either.
+    """
+    from rag_contract.gate import load_thresholds
+
+    service = Service(registry=serving, questions=QUESTIONS, drafter=StaticDrafter())
+    app = create_app(service)
+    assert app.state.trusted_proxy_hops == load_thresholds().budget.trusted_proxy_hops
 
 
 def test_the_allowance_refills_for_a_client_that_waits(serving):

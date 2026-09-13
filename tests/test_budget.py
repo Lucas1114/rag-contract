@@ -37,7 +37,13 @@ LIMITS = {
     "max_record_drafts_usd": 1.00,
     "max_requests_per_minute": 60,
     "max_client_burst": 10,
+    "trusted_proxy_hops": 0,
 }
+
+# Every limit above is a ceiling and must be positive. `trusted_proxy_hops` is
+# the one field where zero is a real answer — a process reachable directly has
+# no hop to trust — so it is held to its own range instead.
+CEILINGS = sorted(set(LIMITS) - {"trusted_proxy_hops"})
 
 
 class Clock:
@@ -97,7 +103,7 @@ def test_a_limit_nothing_reads_is_refused():
         BudgetLimits.from_mapping({**LIMITS, "max_vibes": 1.0})
 
 
-@pytest.mark.parametrize("name", sorted(LIMITS))
+@pytest.mark.parametrize("name", CEILINGS)
 def test_a_non_positive_limit_is_refused(name):
     with pytest.raises(BudgetError, match=name):
         BudgetLimits.from_mapping({**LIMITS, name: 0})
@@ -378,3 +384,52 @@ def test_measure_reports_the_worst_question_by_median():
     assert set(medians) == {"qa", "qb"}
     assert slowest in {"qa", "qb"}
     assert slowest_ms == max(medians.values())
+
+
+# --- Who the allowance applies to -----------------------------------------
+#
+# Not a ceiling, and here for the reason it is in the same file: an allowance
+# reviewed in `eval/thresholds.yaml` whose subject came from a deployment's
+# environment would be a ceiling whose subject nobody reviewed.
+
+
+def test_a_process_exposed_directly_trusts_no_hop():
+    assert BudgetLimits.from_mapping(LIMITS).trusted_proxy_hops == 0
+
+
+def test_a_deployment_behind_a_proxy_says_how_deep_it_is():
+    limits = BudgetLimits.from_mapping({**LIMITS, "trusted_proxy_hops": 2})
+    assert limits.trusted_proxy_hops == 2
+
+
+def test_a_negative_hop_count_is_refused():
+    with pytest.raises(BudgetError, match="trusted_proxy_hops"):
+        BudgetLimits.from_mapping({**LIMITS, "trusted_proxy_hops": -1})
+
+
+def test_a_chain_deeper_than_any_real_deployment_is_a_typo():
+    """And a typo in this direction costs the whole limiter.
+
+    A count larger than the chain is never satisfied by the header, so every
+    request falls back to the socket peer and every visitor lands in one
+    bucket. That is the failure this number was added to remove.
+    """
+    with pytest.raises(BudgetError, match="outside 0..4"):
+        BudgetLimits.from_mapping({**LIMITS, "trusted_proxy_hops": 5})
+
+
+def test_a_fractional_hop_count_is_a_typo_too():
+    with pytest.raises(BudgetError, match="whole number"):
+        BudgetLimits.from_mapping({**LIMITS, "trusted_proxy_hops": 1.5})
+
+
+def test_the_committed_file_says_who_a_client_is():
+    """The deployment is behind exactly one proxy, and the file has to say so.
+
+    Committed rather than configured: the allowance and its subject are one
+    statement, and splitting them across a file and an environment is how a
+    reviewed 60-a-minute silently becomes 60 for everyone at once.
+    """
+    from rag_contract.gate import load_thresholds
+
+    assert load_thresholds().budget.trusted_proxy_hops == 1

@@ -60,6 +60,7 @@ from .gate import (
     rate_limit_check,
     refusal_checks,
     run_gate,
+    trusted_hop_check,
 )
 from .index import INDEX_DIR, load_index, write_index
 from .lifecycle import index_status
@@ -296,7 +297,10 @@ def _budget_checks(index, questions, thresholds, args) -> list[Check]:
         record_drafts_usd=record_usd,
         worst_case_record_usd=worst_case_usd,
         thresholds=thresholds,
-    ) + [_rate_limit_check(service, thresholds)]
+    ) + [
+        _rate_limit_check(service, thresholds),
+        _trusted_hop_check(service, thresholds),
+    ]
 
 
 def _rate_limit_check(service: Service, thresholds) -> Check:
@@ -329,6 +333,73 @@ def _rate_limit_check(service: Service, thresholds) -> Check:
     return rate_limit_check(
         statuses=statuses,
         retry_after=refused.get("retry-after"),
+        thresholds=thresholds,
+    )
+
+
+def _trusted_hop_check(service: Service, thresholds) -> Check:
+    """Guarantee 5's third ceiling again, at the other end: who it applies to.
+
+    Two runs through the real surface from one socket, both on a frozen clock
+    so nothing refills and the outcome is the same on any machine.
+
+    The first varies the forgeable part of `X-Forwarded-For` and holds the
+    trusted hop constant, so every request is the same client however the
+    header is dressed up, and the surface has to refuse past the burst. The
+    second varies the trusted hop itself, so every request is a different
+    client arriving through the same proxy, and none of them may be refused —
+    unless nothing is trusted, in which case the header must change nothing and
+    the burst must still bite.
+
+    Both are built from `eval/thresholds.yaml`, including the hop count, for
+    the reason `_rate_limit_check` is: a check that configured the surface it
+    then measured would be a check on nothing.
+    """
+    from .app import create_app, probe
+
+    hops = thresholds.budget.trusted_proxy_hops
+    burst = thresholds.budget.max_client_burst
+    count = burst + 1
+
+    def chain(client: str, nonce: str) -> str:
+        """One `X-Forwarded-For` whose entry `hops` from the right is `client`.
+
+        Everything left of it is the part a caller writes; everything right of
+        it stands for the proxies between that hop and this process.
+        """
+        entries = [nonce, client] + [f"10.9.9.{i}" for i in range(1, max(hops, 1))]
+        return ", ".join(entries)
+
+    def statuses(headers: list[dict[str, str]]) -> list[int]:
+        application = create_app(
+            service,
+            limiter=thresholds.budget.limiter(clock=lambda: 0.0),
+            trusted_proxy_hops=hops,
+        )
+        return [
+            status
+            for status, _ in probe(
+                application,
+                "/questions",
+                client_host="10.0.0.1",
+                count=count,
+                headers=headers,
+            )
+        ]
+
+    return trusted_hop_check(
+        forged_statuses=statuses(
+            [
+                {"X-Forwarded-For": chain("203.0.113.7", f"1.2.3.{i}")}
+                for i in range(count)
+            ]
+        ),
+        distinct_statuses=statuses(
+            [
+                {"X-Forwarded-For": chain(f"203.0.113.{i}", "1.2.3.4")}
+                for i in range(count)
+            ]
+        ),
         thresholds=thresholds,
     )
 

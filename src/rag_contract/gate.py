@@ -455,6 +455,92 @@ def rate_limit_check(
     )
 
 
+def trusted_hop_check(
+    *, forged_statuses: list[int], distinct_statuses: list[int], thresholds: Thresholds
+) -> Check:
+    """That the surface identifies a client at the committed hop, and only there.
+
+    The check above holds that a limiter is installed. This one holds that it
+    is pointed at the right thing, which is a separate failure and a worse one:
+    a limiter counting the wrong entity is not a weaker limit, it is either no
+    limit or an outage.
+
+    Both mistakes are one line apart in the same expression, so both are driven
+    through the real surface rather than asserted about `resolve_client`.
+
+    *Reading the header from the left* is the security failure. The caller
+    writes the leftmost entries, so a limiter reading them hands every request
+    a fresh identity: the first probe sends one caller past the committed
+    burst, varying everything to the left of the trusted hop and holding the
+    hop itself constant, and the surface has to refuse it exactly as if no
+    header had been sent.
+
+    *Not reading the header at all* is the availability failure, and it is the
+    one that made this number necessary. Behind a proxy every request arrives
+    from the same socket, so a surface ignoring the committed hops collapses
+    every visitor into one bucket and refuses the second one. The second probe
+    sends the same number of requests from that one socket with a different
+    client at the trusted hop each time, and none of them may be refused.
+
+    When the committed count is zero, the second probe asserts the opposite:
+    nothing about the header may change who a client is. So the check has the
+    same shape whatever the deployment committed.
+
+    What it cannot hold is that the committed count matches the chain that is
+    actually in front of the process — the gate has no deployment to look at,
+    and both probes are built from the same number they are checking. Nothing
+    in CI can close that, which is why the count is counted from the right: a
+    number larger than the real chain falls back to the socket peer and refuses
+    too much, and a number smaller than it is the only case a caller could
+    exploit, so it is the one that has to be read in a diff rather than caught
+    here.
+    """
+    burst = thresholds.budget.max_client_burst
+    hops = thresholds.budget.trusted_proxy_hops
+
+    def allowed_before_refusal(statuses: list[int]) -> int:
+        return next(
+            (i for i, status in enumerate(statuses) if status == 429), len(statuses)
+        )
+
+    forged = allowed_before_refusal(forged_statuses)
+    distinct = allowed_before_refusal(distinct_statuses)
+
+    detail = ""
+    if forged != burst:
+        detail = (
+            f"one caller varying the entries left of the trusted hop was "
+            f"allowed {forged} requests against a burst of {burst}. Those "
+            "entries are written by the caller, so a surface reading them "
+            "lets any client mint an identity per request"
+        )
+    elif hops and distinct != len(distinct_statuses):
+        detail = (
+            f"requests differing only at hop {hops} from the right shared one "
+            f"bucket and were refused after {distinct}. The committed hops are "
+            "not being honoured, so every visitor behind the proxy is one "
+            "client"
+        )
+    elif not hops and distinct != burst:
+        detail = (
+            f"no hop is trusted, yet varying X-Forwarded-For bought "
+            f"{distinct} requests against a burst of {burst}. A header nobody "
+            "is meant to believe is changing who a client is"
+        )
+    return Check(
+        name="trusted hop",
+        observed=forged,
+        limit=burst,
+        passed=not detail,
+        detail=detail
+        or (
+            "identity is the socket peer"
+            if not hops
+            else f"identity is hop {hops} from the right of X-Forwarded-For"
+        ),
+    )
+
+
 def run_gate(report: dict, thresholds: Thresholds) -> list[Check]:
     """Every check, in the order a reader wants them: aggregate first."""
     return (
