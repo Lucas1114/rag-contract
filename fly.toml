@@ -8,7 +8,7 @@
 # always-on process would be paying to keep 66 MB of read-only arrays resident.
 
 app = "rag-contract"
-primary_region = "iad"
+primary_region = "syd"
 
 [build]
 
@@ -17,6 +17,26 @@ primary_region = "iad"
 
 # The explicit `[[services]]` form rather than the `http_service` shorthand,
 # and the reason is the health check below.
+# One machine, which is a decision about guarantee 5 rather than about cost.
+#
+# The limiter holds one token bucket per process, so N machines behind the edge
+# is N times the committed allowance. The first deploy proved it: Fly creates a
+# high-availability pair by default, and 26 requests from one visitor came back
+# as refusals starting at the twentieth rather than the eleventh, interleaved,
+# because the edge was alternating between two buckets that could not see each
+# other. `eval/thresholds.yaml` says 60 a minute and 10 at once; on two
+# machines it was 120 and 20.
+#
+# So this app runs a single machine — `fly deploy --ha=false`, or
+# `fly scale count 1` after the fact — and the number in the committed file is
+# the number a visitor actually meets. A process that serves 130 requests a
+# second against a fixed 28-question corpus has nothing to gain from a second
+# one anyway; what it would cost is the only ceiling here that a deployment can
+# quietly multiply.
+#
+# `min_machines_running = 0` below is about idling, not about that: with
+# scale-to-zero the machine stops when nobody is asking and a visitor pays the
+# 0.3 s start.
 [[services]]
   protocol = "tcp"
   internal_port = 8000

@@ -2,6 +2,12 @@
 
 A question-answering service over a small, fixed corpus.
 
+**Live:** <https://rag-contract.fly.dev/> — the fixed question set, and per
+question the state it landed in, the claims that survived the grounding check
+with their citations, the ones that were withdrawn with the rule that withdrew
+them, what the request spent against its deadline, and the index version it was
+answered from.
+
 The retrieval pipeline is not the point. Chunking, embedding, retrieving and
 stuffing a prompt is commodity work and demonstrates nothing. The point is
 treating retrieval as a service with a contract: quality that is measured
@@ -722,6 +728,17 @@ needs a global concurrency limit or something upstream of the process, and
 neither is in this repository. Guarantee 5 is about ceilings this service
 enforces on itself, and the edge of that is worth stating rather than implying.
 
+Deploying it found a sharper version of the same edge. The bucket lives in the
+process, so *N* machines behind the edge is *N* times the committed allowance —
+and the first deploy created a high-availability pair, which is Fly's default.
+26 requests from one visitor came back refused from the twentieth rather than
+the eleventh, interleaved, because the edge was alternating between two buckets
+that could not see each other: the file said 60 a minute and 10 at once, and a
+visitor met 120 and 20. So the app runs a single machine, and `fly.toml`
+records that as a decision about this guarantee rather than about cost. The
+number in the committed file is the number a visitor actually meets, and
+nothing in CI can hold that — only the deployment config can.
+
 ## Regression gate
 
 `eval/thresholds.yaml` is the committed bar. `rag-contract gate` reruns both
@@ -899,6 +916,16 @@ see, so the platform connects to the port instead.
 The one thing the environment decides is `PORT`. Everything that governs
 behaviour — the deadline, the day's cap, the allowance, who a client is — is in
 `eval/thresholds.yaml`, so a deployment can move the socket and nothing else.
+
+On Fly, from `fly.toml`:
+
+```
+fly deploy --ha=false
+```
+
+`--ha=false` is not optional here. The rate limiter holds one bucket per
+process, so the default high-availability pair would double the committed
+allowance — see Budgets above for the measurement that says so.
 
 ## Design decisions
 
