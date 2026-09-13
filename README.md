@@ -8,6 +8,15 @@ with their citations, the ones that were withdrawn with the rule that withdrew
 them, what the request spent against its deadline, and the index version it was
 answered from.
 
+[![q10 answered: partial, with the claim the grounding check withdrew and the
+rule that withdrew it](doc/demo.png)](https://rag-contract.fly.dev/q/q10)
+
+That is `q10`, and it is the interesting case rather than the flattering one:
+seven of eight claims held, and one was withdrawn because it wrote
+`freshness-lifetime` where RFC 9111 Section 4.2.1 writes those as two separate
+words. The rule that dropped it, and the literal it could not find, are on the
+page — rather than the claim being deleted quietly.
+
 The retrieval pipeline is not the point. Chunking, embedding, retrieving and
 stuffing a prompt is commodity work and demonstrates nothing. The point is
 treating retrieval as a service with a contract: quality that is measured
