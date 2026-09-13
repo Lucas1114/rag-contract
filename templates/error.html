@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ status }} — rag-contract{% endblock %}
+{% block body %}
+
+<p class="meta"><a href="/">← the fixed question set</a></p>
+<h1>{{ heading }}</h1>
+<p class="lede">
+  <span class="state state-{{ state }}">{{ state }}</span> · HTTP {{ status }}
+</p>
+
+<div class="panel">
+  <p style="margin:0">{{ detail }}</p>
+</div>
+
+{% if spend %}
+<h2>What the abandoned request spent</h2>
+<div class="panel meta">
+  {{ spend.elapsed_ms }} ms of a {{ spend.deadline_ms }} ms deadline:
+  {% for stage, ms in spend.stages.items() %}<code>{{ stage }}</code> {{ ms }} ms{% if not loop.last %}, {% endif %}{% endfor %}.
+</div>
+{% endif %}
+
+{% endblock %}

@@ -10,6 +10,8 @@ cannot measure, because the eval does not speak HTTP.
     GET /health                  what index is being served, and whether it is stale
     GET /questions               the fixed question set
     GET /answer/{question_id}    one answer, attributable to one index version
+    GET /                        the same question set, for a person
+    GET /q/{question_id}         the same answer, for a person
 
 The index version is in the body *and* in an `X-Index-Version` header, because
 the body is absent from exactly the case where attribution matters most — a
@@ -40,6 +42,21 @@ Which is also why its response carries no `index_version` and no
 never made, and naming an index on it would attribute something to a version
 that never saw it.
 
+The two HTML routes
+-------------------
+
+`/` and `/q/{id}` render exactly what `/questions` and `/answer/{id}` return.
+Not a second implementation of anything: the same `Service.answer` produces the
+same `Answer` under the same deadline and the same allowance, and the template
+reads its fields. They exist because the failure states are the substance of
+this service and a person cannot see them in a JSON body — a withdrawn claim
+shown next to the rule that withdrew it is the whole of guarantee 3 on one
+screen, and `curl` will not put it there.
+
+They carry the state's status code for the same reason the JSON routes do: a
+page that renders a refusal is still a refusal, and a 200 on `no_context` would
+make the surface disagree with itself depending on who was reading.
+
 What is not here
 ----------------
 
@@ -56,9 +73,11 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 
 from .budget import DeadlineExceeded
 from .gate import load_thresholds
@@ -67,6 +86,13 @@ from .lifecycle import index_status
 from .ratelimit import FORWARDED_FOR, RateLimiter, resolve_client
 from .registry import IndexRegistry
 from .service import Service, UnknownQuestion
+
+TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "templates"
+
+# The one link every page carries, and the only external URL in the service.
+# A live demo has to say where its source is, or it is a screenshot with a
+# domain name.
+REPO_URL = "https://github.com/Lucas1114/rag-contract"
 
 
 def _startup_registry() -> IndexRegistry:
@@ -178,6 +204,90 @@ def create_app(
             },
             status_code=429,
             headers={"Retry-After": str(decision.retry_after_s)},
+        )
+
+    templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+    def page(request: Request, name: str, code: int, **context) -> Response:
+        """Render one template with what every page carries.
+
+        The index version comes from the registry rather than from the answer,
+        because the two error pages have no answer to take it from and a page
+        that cannot say what is being served is the one case guarantee 4 is
+        about.
+        """
+        return templates.TemplateResponse(
+            request=request,
+            name=name,
+            status_code=code,
+            context={
+                "repo_url": REPO_URL,
+                "index_version": current().registry.version,
+                **context,
+            },
+        )
+
+    @app.get("/", response_class=Response)
+    def home(request: Request) -> Response:
+        """The fixed set, for a person. No state is computed here.
+
+        Answering all 28 to label the list would cost a second of CPU on a
+        route anyone can hit, and would put the outcome on a page that is
+        supposed to be the invitation to go and see it. What the list shows is
+        what `eval/questions.yaml` annotates — the sections that should support
+        each answer, or the failure state a question should land in — which is
+        the claim the answer page is then checked against.
+        """
+        questions = list(current().questions.values())
+        return page(
+            request,
+            "index.html",
+            200,
+            answerable=[q for q in questions if q.answerable],
+            unanswerable=[q for q in questions if not q.answerable],
+            budget=load_thresholds().budget,
+        )
+
+    @app.get("/q/{question_id}", response_class=Response)
+    def question_page(question_id: str, request: Request) -> Response:
+        """One answer, for a person, through the same call `/answer` makes."""
+        try:
+            answered = current().answer(question_id)
+        except UnknownQuestion:
+            return page(
+                request,
+                "error.html",
+                404,
+                state="unknown",
+                status=404,
+                heading=f"There is no question {question_id}",
+                detail=(
+                    "This service answers a fixed set and takes no free-text "
+                    "input, so a question outside the set is not something to "
+                    "improvise on."
+                ),
+                spend=None,
+            )
+        except DeadlineExceeded as exc:
+            return page(
+                request,
+                "error.html",
+                503,
+                state="abandoned",
+                status=503,
+                heading="This request was abandoned, not answered",
+                detail=exc.detail,
+                spend=exc.spend.to_dict(),
+            )
+
+        question = current().question(question_id)
+        return page(
+            request,
+            "answer.html",
+            answered.state.http_status,
+            question=question,
+            answer=answered,
+            expectation=None if question.answerable else question.expected_state,
         )
 
     @app.get("/health")

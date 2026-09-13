@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ question.id }} — rag-contract{% endblock %}
+{% block body %}
+
+<p class="meta"><a href="/">← the fixed question set</a></p>
+<h1>{{ answer.question }}</h1>
+<p class="lede">
+  <span class="mono">{{ question.id }}</span> ·
+  <span class="state state-{{ answer.state }}">{{ answer.state }}</span> ·
+  HTTP {{ answer.state.http_status }} ·
+  index <span class="mono">{{ answer.index_version or "none" }}</span>
+  {% if expectation %}
+  <br><span style="font-size:.85rem">
+    <code>eval/questions.yaml</code> annotates this question as
+    <span class="mono">{{ expectation }}</span>, and the gate holds the service
+    to agreeing with that annotation across the set.
+  </span>
+  {% endif %}
+</p>
+
+{% if answer.message %}
+<div class="panel">
+  <p style="margin:0">{{ answer.message }}</p>
+</div>
+{% endif %}
+
+{% if answer.supported %}
+<h2>What survived the check <span class="hint">— each claim with the passage that supports it</span></h2>
+<div class="panel">
+  {% for v in answer.supported %}
+  <div class="claim kept">
+    <div>{{ v.text }}</div>
+    <div class="why">
+      <code>{{ v.citation }}</code> — {{ "%.0f" | format(v.coverage * 100) }}% of
+      this claim's content words appear in that passage.
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if answer.withdrawn %}
+<h2>What was withdrawn <span class="hint">— and the rule that withdrew it</span></h2>
+<div class="panel">
+  {% for v in answer.withdrawn %}
+  <div class="claim dropped">
+    <div>{{ v.text }}</div>
+    <div class="why">
+      <span class="rule">{{ v.rule }}</span>{{ v.detail }}.
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if answer.consulted %}
+<h2>What was retrieved <span class="hint">— the passages the drafter saw, and nothing else</span></h2>
+<div class="panel">
+  <table>
+    <thead>
+      <tr><th class="num">rank</th><th>section</th><th class="num">score</th></tr>
+    </thead>
+    <tbody>
+      {% for p in answer.consulted %}
+      <tr>
+        <td class="num">{{ p.rank }}</td>
+        <td><code>{{ p.citation }}</code></td>
+        <td class="num">{{ "%.4f" | format(p.score) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if answer.spend %}
+{% set spend = answer.spend.to_dict() %}
+<h2>What this request spent <span class="hint">— against the deadline it was held to</span></h2>
+<div class="panel">
+  <div class="bar">
+    {% for stage, ms in spend.stages.items() %}
+    <span style="width: {{ (100 * ms / spend.deadline_ms) | round(3) }}%; background: var(--accent);" title="{{ stage }} {{ ms }} ms"></span>
+    {% endfor %}
+  </div>
+  <p class="meta" style="margin:.6rem 0 0">
+    {{ spend.elapsed_ms }} ms of a {{ spend.deadline_ms }} ms deadline:
+    {% for stage, ms in spend.stages.items() %}<code>{{ stage }}</code> {{ ms }} ms{% if not loop.last %}, {% endif %}{% endfor %}.
+    A request that spends the whole of it is abandoned rather than answered —
+    a grounding check stopped part way through has not checked the remaining
+    claims.
+  </p>
+</div>
+{% endif %}
+
+<p class="meta">
+  The same answer as JSON: <a href="/answer/{{ question.id }}">/answer/{{ question.id }}</a>.
+</p>
+
+{% endblock %}

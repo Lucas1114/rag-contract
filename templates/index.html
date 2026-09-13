@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}rag-contract — the fixed question set{% endblock %}
+{% block body %}
+
+<h1>Twenty-eight questions, and no twenty-ninth</h1>
+<p class="lede">
+  This service answers a fixed set over six IETF RFCs. There is no free-text
+  input: the questions below are the whole surface, which is what lets every
+  answer replay a committed draft and rerun the grounding check with no model
+  on the request path.
+</p>
+
+<div class="panel">
+  <p style="margin:0 0 .5rem">
+    Each answer is a list of claims, and each claim names the passage that is
+    supposed to support it. A check decides, per claim, whether that passage
+    actually does — and the claims that fail are shown to you with the rule
+    that dropped them rather than quietly deleted.
+  </p>
+  <p class="meta" style="margin:0">
+    Four outcomes are possible:
+    <span class="state state-grounded">grounded</span> every claim held,
+    <span class="state state-partial">partial</span> some were withdrawn,
+    <span class="state state-unsupported">unsupported</span> none survived and
+    the service refuses, and
+    <span class="state state-no_context">no_context</span> nothing was
+    retrieved at all. The last eight questions below are about things the
+    corpus does not contain, and they are here to make the refusals visible.
+  </p>
+</div>
+
+<h2>In the corpus <span class="hint">— annotated with the sections that should support the answer</span></h2>
+<div class="panel">
+  <ul class="questions">
+    {% for q in answerable %}
+    <li>
+      <a href="/q/{{ q.id }}">
+        <span class="id">{{ q.id }}</span>
+        <span class="q">{{ q.question }}</span>
+        <span class="expect">expects {{ q.expected | join(", ") }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<h2>Not in the corpus <span class="hint">— annotated with the failure state each should land in</span></h2>
+<div class="panel">
+  <ul class="questions">
+    {% for q in unanswerable %}
+    <li>
+      <a href="/q/{{ q.id }}">
+        <span class="id">{{ q.id }}</span>
+        <span class="q">{{ q.question }}</span>
+        <span class="expect">expects {{ q.expected_state }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<h2>What is being served</h2>
+<div class="panel meta">
+  <table>
+    <tr><th>index version</th><td class="mono">{{ index_version or "none" }}</td></tr>
+    <tr><th>request deadline</th><td class="mono">{{ budget.request_deadline_ms }} ms</td></tr>
+    <tr><th>per-client allowance</th><td class="mono">{{ budget.max_requests_per_minute }}/min, {{ budget.max_client_burst }} at once</td></tr>
+    <tr><th>machine-readable</th><td><a href="/questions">/questions</a> · <a href="/health">/health</a> · <a href="/answer/{{ answerable[0].id if answerable else 'q01' }}">/answer/&lt;id&gt;</a></td></tr>
+  </table>
+</div>
+
+{% endblock %}

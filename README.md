@@ -399,6 +399,8 @@ boot cannot.
     GET /health                  which index is being served, and whether it is stale
     GET /questions               the fixed question set
     GET /answer/{question_id}    one answer, attributable to one index version
+    GET /                        the same question set, for a person
+    GET /q/{question_id}         the same answer, for a person
 
 `/answer` returns the state, the claims that survived grounding with their
 citations, the ones that were withdrawn with the rule that dropped them, the
@@ -439,6 +441,26 @@ service answers from would be a worse liability than the feature is worth.
 The handlers translate and decide nothing — the state, the status code and the
 version are all settled before one runs. A rule expressed in a handler would be
 a rule the eval harness cannot measure, because the eval does not speak HTTP.
+
+### The two HTML routes
+
+`/` and `/q/{id}` render what `/questions` and `/answer/{id}` return, from the
+same `Service.answer`, under the same deadline and the same allowance. They are
+not a second implementation of anything and they decide nothing the JSON routes
+do not.
+
+They exist because the failure states are the substance of this service and a
+JSON body does not show them to a person. A claim the check withdrew, printed
+next to the rule that withdrew it and the number that failed, is guarantee 3 on
+one screen — a refusal you can read rather than one you have to take on trust.
+The page also carries the state's status code, so a rendered refusal is still a
+refusal: a 200 on `no_context` would make the surface disagree with itself
+depending on who was reading it.
+
+No page loads anything from another host — no font, no script, no stylesheet.
+A test asserts it. The availability of a page that fetches from a CDN is
+someone else's, which is an odd thing to depend on in a service whose entire
+subject is claims it can hold itself.
 
 ## Budgets
 
@@ -807,6 +829,12 @@ Serving it:
 uv run rag-contract serve
 curl -i localhost:8000/answer/q04
 ```
+
+Then open <http://localhost:8000/> for the same thing as pages: the question
+set, and per question the state it landed in, the claims that survived the
+grounding check with their citations, the ones that were withdrawn with the
+rule that withdrew them, what the request spent against its deadline, and the
+index version it was answered from.
 
 One entry point rather than an ASGI server plus an import path, so a
 container, a platform and a developer all start the same process. `--host` and
