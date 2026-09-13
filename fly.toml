@@ -1,0 +1,67 @@
+# Fly.io, for the reasons the process makes obvious rather than a preference.
+#
+# The service is 58 MB resident, starts in about 0.3 s — 0.28 s of import and
+# 0.01 s to load the committed vectors — holds no state, needs no database, no
+# volume and no API key, because everything it serves is committed to the
+# repository. So it fits the smallest machine there is, and scale-to-zero costs
+# a visitor a third of a second on a cold start. A platform billing for an
+# always-on process would be paying to keep 66 MB of read-only arrays resident.
+
+app = "rag-contract"
+primary_region = "iad"
+
+[build]
+
+[env]
+  PORT = "8000"
+
+# The explicit `[[services]]` form rather than the `http_service` shorthand,
+# and the reason is the health check below.
+[[services]]
+  protocol = "tcp"
+  internal_port = 8000
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  # A TCP check, deliberately, and no HTTP check anywhere in this file.
+  #
+  # `/health` is the most expensive route this service has: 7.6 ms, as much as
+  # the slowest question, because it re-reads and re-hashes the whole 936 KB
+  # corpus to answer whether the committed vectors still describe it. It is
+  # also the only route with no deadline, and — like every route — it is behind
+  # the per-client rate limit.
+  #
+  # That last part is not an oversight. Exempting `/health` would carve a hole
+  # in the shape of the cheapest way to take the process, so the repository
+  # took the other branch and said so: a liveness probe is a client like any
+  # other, and belongs on a path the limiter does not see. This is that path.
+  # A platform probing `/health` every ten seconds would be a client spending
+  # 6 of the allowance a minute forever, and the visitor it eventually crowds
+  # out would be refused for someone else's monitoring.
+  #
+  # What a TCP check gives up is real and worth naming: it proves the process
+  # is listening, not that it can answer. That is the right trade here because
+  # the failure it cannot see is one this service already handles — a process
+  # with no usable index starts anyway and serves `no_context` with a 503,
+  # deliberately, so that `/health` can say what is wrong. Restarting it would
+  # not produce an index; only a commit does.
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "5s"
+
+# 58 MB resident measured in this image, against 256 MB — which is the floor
+# Fly offers rather than a size anything here needs.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

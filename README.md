@@ -706,6 +706,17 @@ Measuring also falsified a claim already in the repository — `lifecycle.py` sa
 `index_status` was "cheap enough to run on every health check" — and the
 docstring now says what it costs and why it is still not cached.
 
+The deployment takes that branch rather than reopening it. `fly.toml` declares
+a TCP check and no HTTP check anywhere, so the platform probes the port and
+never enters the process: an HTTP probe every ten seconds would be a client
+spending 6 of the allowance a minute forever, and the visitor it eventually
+crowded out would be refused for someone else's monitoring. What a TCP check
+gives up is real — it proves the process is listening, not that it can answer.
+That is the right trade here because the failure it cannot see is one this
+service already handles deliberately: a process with no usable index starts
+anyway and serves `no_context` with a 503 so that `/health` can say what is
+wrong, and restarting it would not produce an index. Only a commit does.
+
 What a per-client limit cannot do is bound many clients rather than one. That
 needs a global concurrency limit or something upstream of the process, and
 neither is in this repository. Guarantee 5 is about ceilings this service
@@ -866,6 +877,28 @@ a command that runs out of budget stops with nothing written rather than
 finishing and reporting what it cost. Spend is recorded to a local, gitignored
 ledger; nothing about it is committed, because it is machine state rather than a
 property of the repository.
+
+### Deploying it
+
+```
+docker build -t rag-contract .
+docker run --rm -p 8000:8000 rag-contract
+```
+
+The image copies the package, the templates, the corpus, the committed vectors
+and the question set, thresholds and drafts — by name, not with `COPY . .` and
+a list of exclusions, because the two are equivalent right up until someone
+adds a file. It runs as a non-root user, needs no key and no volume, writes
+nothing, and starts in about 0.3 s into 58 MB resident — measured in the
+container, against the 256 MB that is the smallest machine Fly offers.
+
+There is no `HEALTHCHECK` in the image and no HTTP check in `fly.toml`, for the
+reason under Budgets above: the probe belongs on a path the rate limiter cannot
+see, so the platform connects to the port instead.
+
+The one thing the environment decides is `PORT`. Everything that governs
+behaviour — the deadline, the day's cap, the allowance, who a client is — is in
+`eval/thresholds.yaml`, so a deployment can move the socket and nothing else.
 
 ## Design decisions
 

@@ -1,0 +1,28 @@
+# The image copies by name, so this is the second lock rather than the first.
+# What it is guarding is the build context: everything below would be sent to
+# the daemon, and two of these groups must never leave this machine at all.
+
+# Private, and never in a repo or an image.
+CLAUDE.md
+AGENTS.md
+PROJECT_RULES.md
+.handoffs/
+.env
+.env.*
+!.env.example
+.spend/
+
+# Local state and history, of no use to a running service.
+.git/
+.github/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+# In the repository, not in the image.
+tests/
+eval/results/
+README.md
