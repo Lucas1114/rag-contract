@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -558,6 +559,55 @@ def cmd_eval_answers(args: argparse.Namespace) -> int:
     return 0
 
 
+DEFAULT_PORT = 8000
+
+
+def _port_from_environment() -> int:
+    """The one thing about this process the environment gets to decide.
+
+    Everything that governs behaviour — the deadline, the day's cap, the
+    allowance, who a client is — is committed to `eval/thresholds.yaml`
+    precisely so that a deployment cannot quietly change it. The port is the
+    exception because it is not behaviour: a platform assigns a socket and the
+    process either binds the one it was given or is unreachable. `PORT` is that
+    platform convention, and nothing about the contract depends on its value.
+    """
+    raw = os.environ.get("PORT")
+    if not raw:
+        return DEFAULT_PORT
+    try:
+        port = int(raw)
+    except ValueError as exc:
+        raise SystemExit(f"PORT={raw!r} is not a port number") from exc
+    if not 1 <= port <= 65535:
+        raise SystemExit(f"PORT={port} is outside 1..65535")
+    return port
+
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Serve the committed index over HTTP.
+
+    Since P05 the way to run this service has been to name uvicorn and an
+    import path in the README, which is a run instruction rather than an
+    entry point: it puts the ASGI server, the module path and the bind address
+    in the reader's hands, and a container has to repeat all three. This is the
+    same process with one name, so the README, the Dockerfile and a developer
+    all start it the same way.
+
+    Nothing here composes the service. `create_app` does that from the
+    committed thresholds, in the lifespan, so a process started by hand and a
+    process started by a platform are the same process — including when there
+    is no usable index, which starts anyway and says so on `/health` rather
+    than exiting.
+    """
+    import uvicorn
+
+    from .app import create_app
+
+    uvicorn.run(create_app(), host=args.host, port=args.port, log_level=args.log_level)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rag-contract")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -650,6 +700,23 @@ def build_parser() -> argparse.ArgumentParser:
         "-q", "--quiet", action="store_true", help="print a one-line summary only"
     )
     answers.set_defaults(func=cmd_eval_answers)
+
+    serve = subparsers.add_parser(
+        "serve", help="serve the committed index over HTTP (no network, no key)"
+    )
+    serve.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="bind address (default 127.0.0.1; a container wants 0.0.0.0)",
+    )
+    serve.add_argument(
+        "--port",
+        type=int,
+        default=_port_from_environment(),
+        help=f"bind port (default $PORT, or {DEFAULT_PORT})",
+    )
+    serve.add_argument("--log-level", default="info")
+    serve.set_defaults(func=cmd_serve)
 
     gate = subparsers.add_parser(
         "gate",

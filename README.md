@@ -804,9 +804,16 @@ behind it, and `--quiet` reduces it to one line.
 Serving it:
 
 ```
-uv run uvicorn rag_contract.app:app --port 8000
+uv run rag-contract serve
 curl -i localhost:8000/answer/q04
 ```
+
+One entry point rather than an ASGI server plus an import path, so a
+container, a platform and a developer all start the same process. `--host` and
+`--port` override the defaults, and `PORT` is read from the environment because
+a platform assigns the socket — it is the only thing about this process the
+environment decides, and it is not behaviour. Everything that is behaviour is
+committed to `eval/thresholds.yaml`.
 
 No key, no network: the answer replays a committed draft and reruns retrieval,
 the grounding check and the state machine against the committed index.
