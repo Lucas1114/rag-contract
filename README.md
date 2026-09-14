@@ -1,5 +1,7 @@
 # rag-contract
 
+[![ci](https://github.com/Lucas1114/rag-contract/actions/workflows/ci.yml/badge.svg)](https://github.com/Lucas1114/rag-contract/actions/workflows/ci.yml)
+
 A question-answering service over a small, fixed corpus.
 
 **Live:** <https://rag-contract.fly.dev/> — the fixed question set, and per
